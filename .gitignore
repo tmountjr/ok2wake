@@ -4,3 +4,5 @@
 .vscode/launch.json
 .vscode/ipch
 src/secrets.h
+node_modules
+lib/Weblog/src/local_config.h

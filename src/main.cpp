@@ -4,10 +4,16 @@
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 #include <secrets.h>
+#include <LEDEvent.h>
+#include <Arduino-Queue.h>
+#include <cstdarg>
 
 #ifndef WIFI_PASSWORD
   #define WIFI_PASSWORD "Please define WIFI_PASSWORD in src/secrets.h"
 #endif
+
+// EDT offset from GMT in seconds
+#define EDT_OFFSET -14400L
 
 // RGB LED pins
 #define RGB_A_B D1
@@ -18,29 +24,52 @@
 #define RGB_B_G D6
 #define RGB_B_R D7
 
-#define FLIP_INTERVAL 43200000L // 12h * 60m * 60s * 1000ms
-// #define FLIP_INTERVAL 5000L // 5 seconds for testing purposes
+// Define this here to enable web logging; configure the logging in src/weblog_config.h
+#define WEBLOG
+#ifdef WEBLOG
+  #include <Weblog.h>
+  Weblog weblog;
+#endif
+
+void statusLog(const char *msg, ...) {
+  char buffer[1024];
+  va_list args;
+  va_start(args, msg);
+  vsnprintf(buffer, 1024, msg, args);
+  Serial.println(buffer);
+  va_end(args);
+}
 
 // NTP setup
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP);
 
-// TODO: set up flash memory storage of the "ok time" and the "sleep time"
+// Queue setup
+ArduinoQueue<LEDEvent> q = ArduinoQueue<LEDEvent>();
 
-// TODO: set up a simple web app to manage the following options:
-//  1. "ok time" color (RGB)
-//  2. "sleep time" color (RGB)
-//  3. some sort of schedule, allowing multiple windows for "ok" and "sleep"
+// Allocate spots for current and next events
+LEDEvent current, next;
 
-unsigned long millis_until_next = -1;
-int target_hours[] = {7, 19};
-int target_minutes[] = {0, 0};
-byte wake[] = {1, 0};
-byte wake_state = 1;
-
-void flip() {
-  // Serial.print("Flipping: old state = "); Serial.print(wake_state); Serial.print("; new state = "); Serial.print(!wake_state);
-  wake_state = !wake_state;
+// Rearrange a queue such that the next event to trigger is at the head of the queue.
+void orderQueue(ArduinoQueue<LEDEvent> &q)
+{
+  // cycle through the queue and find the first timestamp that hasn't happened yet
+  // assume an ordered list
+  for (int i = 0; i < q.count(); i++)
+  {
+    LEDEvent c = q.peek();
+    if (
+        c.hour > timeClient.getHours() ||
+        (c.hour == timeClient.getHours() && c.minute >= timeClient.getMinutes()))
+    {
+      // the head of the queue is now the next one to kick off, we're done.
+      break;
+    }
+    q.pop();
+    q.push(c);
+  }
+  // at this point the queue should have the next item at the head of the line,
+  // even if it cycled back to the original order.
 }
 
 void green() {
@@ -93,8 +122,7 @@ void setup() {
   Serial.println(WiFi.localIP());
 
   timeClient.begin();
-  timeClient.update();
-  unsigned long current_time = timeClient.getEpochTime();
+  unsigned long current_time = 0;
   Serial.print("Getting time");
   while (current_time < 1000) {
     Serial.print(".");
@@ -102,90 +130,57 @@ void setup() {
     current_time = timeClient.getEpochTime();
     delay(500);
   }
+  timeClient.setTimeOffset(EDT_OFFSET);
   Serial.println("\n");
 
   Serial.print("Started running at ");
   Serial.println(timeClient.getFormattedTime());
 
-  // Calculate the time between now and whatever the next event is
-  int target_index = 0;
-  bool found_target = false;
+#ifdef WEBLOG
+  weblog.post("[setup] Started running at " + timeClient.getFormattedTime());
+  delay(3000);
+#endif
 
-  int current_hour = timeClient.getHours() - 4;
-  if (current_hour < 0) current_hour += 24;
-  int current_minute = timeClient.getMinutes();
+  LEDEvent am(7, 0, 1);
+  LEDEvent pm(18, 30, 0);
+  q.push(am);
+  q.push(pm);
+  orderQueue(q);
+  current = q.last();
+  next = q.peek();
 
-  // Serial.println("*** current time ***");
-  // Serial.print("current time: "); Serial.print(current_hour);
-  // Serial.print(":"); Serial.println(current_minute);
+  statusLog("{\"first\":{\"hour\":%d,\"minute\":%d,\"ledstate\":%s},\"last\":{\"hour\":%d,\"minute\":%d,\"ledstate\":%s}}\"",
+            next.hour,
+            next.minute,
+            next.ledstate ? "on" : "off",
+            current.hour,
+            current.minute,
+            current.ledstate ? "on" : "off");
 
-  int target_length = sizeof(target_hours) / sizeof(target_hours[0]);
-  for (int i = 0; i < target_length; i += 1) {
-    Serial.print("target time: "); Serial.print(target_hours[i]); Serial.print(":"); Serial.println(target_minutes[i]);
-    if (target_hours[i] > current_hour) {
-      Serial.println("   target_hours < current_hour");
-      target_index = i;
-      found_target = true;
-    } else if (target_hours[i] == current_hour) {
-      Serial.println("   target_hours == current_hour");
-      // Check that we're note in the right hour but still waiting
-      if (target_minutes[i] > current_minute) {
-        Serial.println("      target_minutes > current_minute");
-        target_index = i;
-        found_target = true;
-      }
-    }
-    if (found_target) break;
-  }
-
-  Serial.println("After iteration:");
-  Serial.print("target index: "); Serial.println(target_index);
-  Serial.print("found? ");
-  if (found_target) {
-    Serial.println("yes");
-  } else {
-    Serial.println("no");
-  }
-
-  // wake_state should be the state in target_index - 1
-  // if that is a negative number, it becomes the last element
-  // if that matches the sizeof, it becomes 0
-  Serial.print("Target index: "); Serial.println(target_index);
-  int wake_state_index = target_index - 1;
-  if (wake_state_index < 0) wake_state_index = target_length - 1;
-  if (wake_state_index == target_length) wake_state_index = 0;
-  Serial.print("Wake state index: "); Serial.println(wake_state_index);
-  wake_state = wake[wake_state_index];
-
-  int hours_until_next = target_hours[target_index] - current_hour;
-  if (!found_target) hours_until_next = (24 - current_hour) + target_hours[0];
-  if (hours_until_next > 0) hours_until_next -= 1;
-  
-  int minutes_until_next = hours_until_next * 60;
-  minutes_until_next += target_minutes[target_index] - current_minute;
-
-  millis_until_next = minutes_until_next * 60 * 1000;
-  // Serial.println("Until next event:");
-  // Serial.print("Hours: ");
-  // Serial.println(hours_until_next);
-  // Serial.print("Minutes: ");
-  // Serial.println(minutes_until_next);
-
-  // Serial.print("millis() until next event: ");
-  // Serial.println(millis_until_next);
+#ifdef WEBLOG
+  LEDEvent next = q.peek();
+  String msg = "[setup] Next event time: ";
+  msg += next.hour + "h";
+  msg += ":";
+  msg += next.minute + "m";
+  weblog.post(msg);
+  delay(3000);
+  weblog.post("[setup] Current state: " + current.ledstate ? "on" : "off");
+  delay(3000);
+#endif
 }
 
 void loop() {
-  unsigned long current_millis = millis();
-  if (millis_until_next > 0 && current_millis >= millis_until_next) {
-    flip();
-    millis_until_next = current_millis + FLIP_INTERVAL;
+  if (next.hour == timeClient.getHours() && next.minute == timeClient.getMinutes()) {
+    current = next;
+    q.pop();
+    q.push(next);
+    next = q.peek();
   }
-  if (wake_state) {
+  if (current.ledstate)
     green();
-  } else {
+  else
     purple();
-  }
 
   ArduinoOTA.handle();
 }

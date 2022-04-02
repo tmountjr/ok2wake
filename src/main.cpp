@@ -9,7 +9,11 @@
 #include <cstdarg>
 
 #ifndef WIFI_PASSWORD
-  #define WIFI_PASSWORD "Please define WIFI_PASSWORD in src/secrets.h"
+#define WIFI_PASSWORD "Please define WIFI_PASSWORD in src/secrets.h"
+#endif
+
+#ifndef WIFI_SSID
+#define WIFI_SSID "Please define WIFI_SSID in src/secrets.h"
 #endif
 
 // EDT offset from GMT in seconds
@@ -27,11 +31,12 @@
 // Define this here to enable web logging; configure the logging in src/weblog_config.h
 #define WEBLOG
 #ifdef WEBLOG
-  #include <Weblog.h>
-  Weblog weblog;
+#include <Weblog.h>
+Weblog weblog;
 #endif
 
-void statusLog(const char *msg, ...) {
+void statusLog(const char *msg, ...)
+{
   char buffer[1024];
   va_list args;
   va_start(args, msg);
@@ -72,7 +77,8 @@ void orderQueue(ArduinoQueue<LEDEvent> &q)
   // even if it cycled back to the original order.
 }
 
-void green() {
+void green()
+{
   analogWrite(RGB_A_R, 0);
   analogWrite(RGB_A_G, 255);
   analogWrite(RGB_A_B, 0);
@@ -81,7 +87,8 @@ void green() {
   analogWrite(RGB_B_B, 0);
 }
 
-void purple() {
+void purple()
+{
   analogWrite(RGB_A_R, 210);
   analogWrite(RGB_A_G, 0);
   analogWrite(RGB_A_B, 255);
@@ -90,7 +97,8 @@ void purple() {
   analogWrite(RGB_B_B, 255);
 }
 
-void off() {
+void off()
+{
   digitalWrite(RGB_A_R, LOW);
   digitalWrite(RGB_A_G, LOW);
   digitalWrite(RGB_A_B, LOW);
@@ -99,7 +107,8 @@ void off() {
   digitalWrite(RGB_B_B, LOW);
 }
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
 
   pinMode(RGB_A_R, OUTPUT);
@@ -110,10 +119,9 @@ void setup() {
   pinMode(RGB_B_B, OUTPUT);
   off();
 
-  const char *ssid = "ihatecomputers";
-
-  WiFi.begin(ssid, WIFI_PASSWORD);
-  while (WiFi.status() != WL_CONNECTED) {
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while (WiFi.status() != WL_CONNECTED)
+  {
     delay(1000);
     Serial.print(".");
   }
@@ -128,7 +136,8 @@ void setup() {
   timeClient.begin();
   unsigned long current_time = 0;
   Serial.print("Getting time");
-  while (current_time < 1000) {
+  while (current_time < 1000)
+  {
     Serial.print(".");
     timeClient.update();
     current_time = timeClient.getEpochTime();
@@ -178,24 +187,27 @@ void setup() {
 #endif
 }
 
-void loop() {
-  if (next.hour == timeClient.getHours() && next.minute == timeClient.getMinutes()) {
+void loop()
+{
+  if (next.hour == timeClient.getHours() && next.minute == timeClient.getMinutes())
+  {
     current = next;
     q.pop();
     q.push(next);
     next = q.peek();
   }
-  switch (current.ledstate) {
-    case LEDEvent::LED_STATE_WAKE:
-      green();
-      break;
-    case LEDEvent::LED_STATE_SLEEP:
-      purple();
-      break;
-    case LEDEvent::LED_STATE_OFF:
-    default:
-      off();
-      break;
+  switch (current.ledstate)
+  {
+  case LEDEvent::LED_STATE_WAKE:
+    green();
+    break;
+  case LEDEvent::LED_STATE_SLEEP:
+    purple();
+    break;
+  case LEDEvent::LED_STATE_OFF:
+  default:
+    off();
+    break;
   }
 
   ArduinoOTA.handle();

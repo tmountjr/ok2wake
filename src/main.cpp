@@ -90,6 +90,15 @@ void purple() {
   analogWrite(RGB_B_B, 255);
 }
 
+void off() {
+  digitalWrite(RGB_A_R, LOW);
+  digitalWrite(RGB_A_G, LOW);
+  digitalWrite(RGB_A_B, LOW);
+  digitalWrite(RGB_B_R, LOW);
+  digitalWrite(RGB_B_G, LOW);
+  digitalWrite(RGB_B_B, LOW);
+}
+
 void setup() {
   Serial.begin(115200);
 
@@ -99,12 +108,7 @@ void setup() {
   pinMode(RGB_B_B, OUTPUT);
   pinMode(RGB_B_G, OUTPUT);
   pinMode(RGB_B_B, OUTPUT);
-  digitalWrite(RGB_A_R, LOW);
-  digitalWrite(RGB_A_G, LOW);
-  digitalWrite(RGB_A_B, LOW);
-  digitalWrite(RGB_B_R, LOW);
-  digitalWrite(RGB_B_G, LOW);
-  digitalWrite(RGB_B_B, LOW);
+  off();
 
   const char *ssid = "ihatecomputers";
 
@@ -141,10 +145,14 @@ void setup() {
   delay(3000);
 #endif
 
-  LEDEvent am(7, 0, 1);
-  LEDEvent pm(18, 30, 0);
+  LEDEvent am(7, 0, LEDEvent::LED_STATE_WAKE);
+  LEDEvent midday(8, 0, LEDEvent::LED_STATE_OFF);
+  LEDEvent pm(18, 30, LEDEvent::LED_STATE_SLEEP);
+  LEDEvent overnight(17, 0, LEDEvent::LED_STATE_OFF);
   q.push(am);
+  q.push(midday);
   q.push(pm);
+  q.push(overnight);
   orderQueue(q);
   current = q.last();
   next = q.peek();
@@ -165,7 +173,7 @@ void setup() {
   msg += next.minute + "m";
   weblog.post(msg);
   delay(3000);
-  weblog.post("[setup] Current state: " + current.ledstate ? "on" : "off");
+  weblog.post("[setup] Current state: " + current.ledstate);
   delay(3000);
 #endif
 }
@@ -177,10 +185,18 @@ void loop() {
     q.push(next);
     next = q.peek();
   }
-  if (current.ledstate)
-    green();
-  else
-    purple();
+  switch (current.ledstate) {
+    case LEDEvent::LED_STATE_WAKE:
+      green();
+      break;
+    case LEDEvent::LED_STATE_SLEEP:
+      purple();
+      break;
+    case LEDEvent::LED_STATE_OFF:
+    default:
+      off();
+      break;
+  }
 
   ArduinoOTA.handle();
 }

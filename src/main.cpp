@@ -169,10 +169,10 @@ void setup()
   statusLog("{\"first\":{\"hour\":%d,\"minute\":%d,\"ledstate\":%s},\"last\":{\"hour\":%d,\"minute\":%d,\"ledstate\":%s}}\"",
             next.hour,
             next.minute,
-            next.ledstate ? "on" : "off",
+            next.ledstate,
             current.hour,
             current.minute,
-            current.ledstate ? "on" : "off");
+            current.ledstate);
 
 #ifdef WEBLOG
   LEDEvent next = q.peek();

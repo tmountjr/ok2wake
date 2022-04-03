@@ -1,11 +1,16 @@
 #include <Arduino.h>
 #include <ArduinoOTA.h>
 #include <ESP8266WiFi.h>
-#include <NTPClient.h>
-#include <WiFiUdp.h>
-#include <secrets.h>
-#include <LEDEvent.h>
 #include <Arduino-Queue.h>
+
+// Include config.
+#include "secrets.h"
+
+// Set up global variables.
+#include "globals.h"
+
+// Include web server functionality.
+#include "WebServer.h"
 
 #ifndef WIFI_PASSWORD
 #define WIFI_PASSWORD "Please define WIFI_PASSWORD in src/secrets.h"
@@ -34,16 +39,8 @@
 Weblog weblog;
 #endif
 
-// NTP setup
-WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP);
-
 // Queue setup
 ArduinoQueue<LEDEvent> q = ArduinoQueue<LEDEvent>();
-// LinkedList<LEDEvent> ll;
-
-// Allocate spots for current and next events
-LEDEvent current, next;
 
 // Rearrange a queue such that the next event to trigger is at the head of the queue.
 void orderQueue(ArduinoQueue<LEDEvent> &q)
@@ -121,6 +118,9 @@ void setup()
   Serial.println(WiFi.localIP());
   Serial.println("");
 
+  // Set up WiFi server
+  wifiServerSetup();
+
   ArduinoOTA.begin();
 
   timeClient.begin();
@@ -153,6 +153,7 @@ void setup()
   orderQueue(q);
   current = q.last();
   next = q.peek();
+  targetLedStatus = current.ledstate;
 
   Serial.printf("{\"first\":{\"hour\":%d,\"minute\":%d,\"ledstate\":%d},\"last\":{\"hour\":%d,\"minute\":%d,\"ledstate\":%d}}\"\n",
                 next.hour,
@@ -170,7 +171,7 @@ void setup()
   msg += next.minute + "m";
   weblog.post(msg);
   delay(3000);
-  weblog.post("[setup] Current state: " + current.ledstate);
+  weblog.post("[setup] Current state: " + targetLedStatus);
   delay(3000);
 #endif
 }
@@ -183,8 +184,9 @@ void loop()
     q.pop();
     q.push(next);
     next = q.peek();
+    targetLedStatus = current.ledstate;
   }
-  switch (current.ledstate)
+  switch (targetLedStatus)
   {
   case LEDEvent::LED_STATE_WAKE:
     wake();
@@ -199,4 +201,5 @@ void loop()
   }
 
   ArduinoOTA.handle();
+  server.handleClient();
 }

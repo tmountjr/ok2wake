@@ -51,6 +51,7 @@ NTPClient timeClient(ntpUDP);
 
 // Queue setup
 ArduinoQueue<LEDEvent> q = ArduinoQueue<LEDEvent>();
+// LinkedList<LEDEvent> ll;
 
 // Allocate spots for current and next events
 LEDEvent current, next;
@@ -77,7 +78,7 @@ void orderQueue(ArduinoQueue<LEDEvent> &q)
   // even if it cycled back to the original order.
 }
 
-void green()
+void wake()
 {
   analogWrite(RGB_A_R, 0);
   analogWrite(RGB_A_G, 255);
@@ -87,7 +88,7 @@ void green()
   analogWrite(RGB_B_B, 0);
 }
 
-void purple()
+void sleep()
 {
   analogWrite(RGB_A_R, 210);
   analogWrite(RGB_A_G, 0);
@@ -157,7 +158,7 @@ void setup()
   LEDEvent am(7, 0, LEDEvent::LED_STATE_WAKE);
   LEDEvent midday(8, 0, LEDEvent::LED_STATE_OFF);
   LEDEvent pm(18, 30, LEDEvent::LED_STATE_SLEEP);
-  LEDEvent overnight(17, 0, LEDEvent::LED_STATE_OFF);
+  LEDEvent overnight(19, 0, LEDEvent::LED_STATE_OFF);
   q.push(am);
   q.push(midday);
   q.push(pm);
@@ -199,10 +200,10 @@ void loop()
   switch (current.ledstate)
   {
   case LEDEvent::LED_STATE_WAKE:
-    green();
+    wake();
     break;
   case LEDEvent::LED_STATE_SLEEP:
-    purple();
+    sleep();
     break;
   case LEDEvent::LED_STATE_OFF:
   default:

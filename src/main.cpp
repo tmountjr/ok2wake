@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <ArduinoOTA.h>
 #include <ESP8266WiFi.h>
-#include <Arduino-Queue.h>
 
 // Include config.
 #include "secrets.h"
@@ -38,9 +37,6 @@
 #include <Weblog.h>
 Weblog weblog;
 #endif
-
-// Queue setup
-ArduinoQueue<LEDEvent> q = ArduinoQueue<LEDEvent>();
 
 // Rearrange a queue such that the next event to trigger is at the head of the queue.
 void orderQueue(ArduinoQueue<LEDEvent> &q)

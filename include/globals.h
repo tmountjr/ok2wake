@@ -5,6 +5,7 @@
 #include <WiFiUdp.h>
 #include <NTPClient.h>
 #include <ESP8266WebServer.h>
+#include <Arduino-Queue.h>
 #include <string>
 
 // NTP setup
@@ -19,3 +20,6 @@ ESP8266WebServer server(8080);
 
 // Target LED status (allows for overrides)
 byte targetLedStatus;
+
+// Queue setup
+ArduinoQueue<LEDEvent> q = ArduinoQueue<LEDEvent>();

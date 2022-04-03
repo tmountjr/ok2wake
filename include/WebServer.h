@@ -16,7 +16,22 @@ void invalidRequestResponse(int status = 400, String msg = "Bad Request")
   server.send(status, "text/plain", msg);
 }
 
-void statusResponse()
+void getEventsResponse() {
+  HTTPMethod method = server.method();
+  if (!(method == HTTP_GET || method == HTTP_HEAD)) {
+    invalidRequestResponse(405, "Method Not Allowed");
+  }
+  char *contentType = "application/json";
+  if (method == HTTP_HEAD) {
+    server.send(200, contentType, "");
+  }
+
+  char buff[1024];
+  sprintf(buff, "{\"error\":\"not yet implemented\"}");
+  server.send(200, contentType, buff);
+}
+
+void getStatusResponse()
 {
   HTTPMethod method = server.method();
   if (method == HTTP_HEAD)
@@ -67,8 +82,9 @@ void resetResponse() {
 
 void wifiServerSetup()
 {
+  server.on("/events", getEventsResponse);
   server.on("/status/set", setLedStatusResponse);
-  server.on("/status", statusResponse);
+  server.on("/status", getStatusResponse);
   server.on("/reset", resetResponse);
 
   server.onNotFound(notFoundResponse);

@@ -6,7 +6,6 @@
 #include <secrets.h>
 #include <LEDEvent.h>
 #include <Arduino-Queue.h>
-#include <cstdarg>
 
 #ifndef WIFI_PASSWORD
 #define WIFI_PASSWORD "Please define WIFI_PASSWORD in src/secrets.h"
@@ -29,21 +28,11 @@
 #define RGB_B_R D7
 
 // Define this here to enable web logging; configure the logging in src/weblog_config.h
-#define WEBLOG
+// #define WEBLOG
 #ifdef WEBLOG
 #include <Weblog.h>
 Weblog weblog;
 #endif
-
-void statusLog(const char *msg, ...)
-{
-  char buffer[1024];
-  va_list args;
-  va_start(args, msg);
-  vsnprintf(buffer, 1024, msg, args);
-  Serial.println(buffer);
-  va_end(args);
-}
 
 // NTP setup
 WiFiUDP ntpUDP;
@@ -120,19 +109,19 @@ void setup()
   pinMode(RGB_B_B, OUTPUT);
   off();
 
+  Serial.print("\nStarting wifi");
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED)
   {
-    delay(1000);
     Serial.print(".");
+    delay(1000);
   }
-
-  ArduinoOTA.begin();
-
-  Serial.println("\n");
-  Serial.println("Connected!");
+  Serial.println(" Connected!");
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
+  Serial.println("");
+
+  ArduinoOTA.begin();
 
   timeClient.begin();
   unsigned long current_time = 0;
@@ -145,10 +134,8 @@ void setup()
     delay(500);
   }
   timeClient.setTimeOffset(EDT_OFFSET);
-  Serial.println("\n");
-
-  Serial.print("Started running at ");
-  Serial.println(timeClient.getFormattedTime());
+  Serial.println(" Done!");
+  Serial.printf("Started running at %s\n\n", timeClient.getFormattedTime());
 
 #ifdef WEBLOG
   weblog.post("[setup] Started running at " + timeClient.getFormattedTime());
@@ -167,13 +154,13 @@ void setup()
   current = q.last();
   next = q.peek();
 
-  statusLog("{\"first\":{\"hour\":%d,\"minute\":%d,\"ledstate\":%s},\"last\":{\"hour\":%d,\"minute\":%d,\"ledstate\":%s}}\"",
-            next.hour,
-            next.minute,
-            next.ledstate,
-            current.hour,
-            current.minute,
-            current.ledstate);
+  Serial.printf("{\"first\":{\"hour\":%d,\"minute\":%d,\"ledstate\":%d},\"last\":{\"hour\":%d,\"minute\":%d,\"ledstate\":%d}}\"\n",
+                next.hour,
+                next.minute,
+                next.ledstate,
+                current.hour,
+                current.minute,
+                current.ledstate);
 
 #ifdef WEBLOG
   LEDEvent next = q.peek();

@@ -12,6 +12,12 @@
     "memory": "cpp",
     "random": "cpp",
     "initializer_list": "cpp",
-    "ranges": "cpp"
+    "ranges": "cpp",
+    "exception": "cpp",
+    "memory_resource": "cpp",
+    "new": "cpp",
+    "ostream": "cpp",
+    "stdexcept": "cpp",
+    "streambuf": "cpp"
   }
 }

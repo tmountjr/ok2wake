@@ -12,28 +12,34 @@ LEDEvent *midday = new LEDEvent(8, 0, LEDEvent::LED_STATE_OFF);
 LEDEvent *pm = new LEDEvent(18, 30, LEDEvent::LED_STATE_SLEEP);
 LEDEvent *overnight = new LEDEvent(19, 0, LEDEvent::LED_STATE_OFF);
 
-Node<LEDEvent> *nextUp;
+Node<LEDEvent> *current, *nextUp;
 
 // bootstrap the current hour and minute so they can be mocked in the test
 int currentHour, currentMinute;
 
 // Find the event that is next to fire.
-void findNextUp(LinkedList<LEDEvent> l)
+void findCurrent(LinkedList<LEDEvent> l)
 {
-  nextUp = l.head;
-  LEDEvent *nextUpEvent = nextUp->data;
+  current = l.head;
+  nextUp = current->next;
 
   // Edge case: if the first event is future or the last event is past, don't loop
   // because in both cases we use the head of the list.
   if (
       l.tail->data->isPast(currentHour, currentMinute) ||
-      l.head->data->isFuture(currentHour, currentMinute))
+      l.head->data->isFuture(currentHour, currentMinute)
+  ) {
+    current = l.tail;
+    nextUp = current->next;
     return;
+  }
 
-  while (nextUpEvent->isPast(currentHour, currentMinute))
+
+  // Set the pointers to where current is in the past and next is in the future.
+  while (!(current->data->isPast(currentHour, currentMinute) && current->next->data->isFuture(currentHour, currentMinute)))
   {
-    nextUp = nextUp->next;
-    nextUpEvent = nextUp->data;
+    current = current->next;
+    nextUp = current->next;
   }
 }
 
@@ -65,53 +71,48 @@ void test_loop(void)
   TEST_ASSERT_EQUAL_PTR(am, ll.tail->next->data);
 }
 
-// Test that the system correctly chooses the next event after the initial event has fired.
-void test_next_up_midday(void)
-{
-  currentHour = 9;
-  currentMinute = 0;
-  findNextUp(ll);
-  TEST_ASSERT_EQUAL_PTR(pm, nextUp->data);
+void test_current_first_event(void) {
+  currentHour = 7;
+  currentMinute = 30;
+  findCurrent(ll);
+  TEST_ASSERT_EQUAL_PTR(am, current->data);
 }
 
-// Test that the system correctly chooses the next event if the current time is
-// after the last defined event.
-void test_next_up_after_last(void)
-{
-  currentHour = 22;
-  currentMinute = 0;
-  findNextUp(ll);
-  TEST_ASSERT_EQUAL_PTR(am, nextUp->data);
+void test_current_second_event(void) {
+  currentHour = 8;
+  currentMinute = 30;
+  findCurrent(ll);
+  TEST_ASSERT_EQUAL_PTR(midday, current->data);
 }
 
-// Test that the system correctly chooses the next event if the current time is
-// before the first defined event.
-void test_next_up_before_first(void)
-{
+void test_current_last_event(void) {
+  currentHour = 23;
+  currentMinute = 0;
+  findCurrent(ll);
+  TEST_ASSERT_EQUAL_PTR(overnight, current->data);
+}
+
+void test_current_before_first(void) {
   currentHour = 6;
   currentMinute = 0;
-  findNextUp(ll);
-  TEST_ASSERT_EQUAL_PTR(am, nextUp->data);
+  findCurrent(ll);
+  TEST_ASSERT_EQUAL_PTR(overnight, current->data);
 }
 
-// Test that the system correctly chooses the next event if the current time is
-// in the same hour as but still prior to an event.
-void test_next_up_same_hour_before(void)
+void test_current_same_hour_before(void)
 {
   currentHour = 18;
   currentMinute = 20;
-  findNextUp(ll);
-  TEST_ASSERT_EQUAL_PTR(pm, nextUp->data);
+  findCurrent(ll);
+  TEST_ASSERT_EQUAL_PTR(midday, current->data);
 }
 
-// Test that the system correctly chooses the next event if the current time is
-// in the same hour as but after an event.
-void test_next_up_same_hour_after(void)
+void test_current_same_hour_after(void)
 {
   currentHour = 18;
   currentMinute = 40;
-  findNextUp(ll);
-  TEST_ASSERT_EQUAL_PTR(overnight, nextUp->data);
+  findCurrent(ll);
+  TEST_ASSERT_EQUAL_PTR(pm, current->data);
 }
 
 void setup()
@@ -126,9 +127,12 @@ void setup()
   RUN_TEST(test_head);
   RUN_TEST(test_tail);
   RUN_TEST(test_loop);
-  RUN_TEST(test_next_up_midday);
-  RUN_TEST(test_next_up_after_last);
-  RUN_TEST(test_next_up_before_first);
+  RUN_TEST(test_current_first_event);
+  RUN_TEST(test_current_second_event);
+  RUN_TEST(test_current_last_event);
+  RUN_TEST(test_current_before_first);
+  RUN_TEST(test_current_same_hour_before);
+  RUN_TEST(test_current_same_hour_after);
   UNITY_END();
 }
 

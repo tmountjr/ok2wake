@@ -1,10 +1,25 @@
 #include <Arduino.h>
+#include <stdexcept>
 
 class LEDEvent
 {
 public:
   LEDEvent();
   LEDEvent(int hour, int minute, int ledstate);
+
+  /**
+   * Determine if this event is to take place after a specified hour and minute.
+   * @param targetHour    The hour to compare against (0-23).
+   * @param targetMinute  The minute to compare against (0-59).
+   */
+  bool isFuture(int targetHour, int targetMinute);
+
+  /**
+   * Determine if this event is to take place before a specified hour and minute.
+   * @param targetHour    The hour to compare against (0-23).
+   * @param targetMinute  The minute to compare against (0-59).
+   */
+  bool isPast(int targeHour, int targetMinute);
 
   int hour, minute, ledstate;
 
@@ -23,4 +38,19 @@ LEDEvent::LEDEvent(int hour, int minute, int ledstate) {
   this->hour = hour;
   this->minute = minute;
   this->ledstate = ledstate;
+}
+
+bool LEDEvent::isFuture(int targetHour, int targetMinute) {
+  if (targetHour < 0 || targetHour > 23 || targetMinute < 0 || targetMinute > 59) {
+    throw new std::out_of_range("Hours must be between 0 and 23; minutes must be between 0 and 59.");
+  }
+
+  return (
+    this->hour > targetHour ||
+    (this->hour == targetHour && this->minute >= targetMinute)
+  );
+}
+
+bool LEDEvent::isPast(int targetHour, int targetMinute) {
+  return !this->isFuture(targetHour, targetMinute);
 }

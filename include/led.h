@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <DimmableRGBLED.h>
 
 // RGB LED pins
 #define RGB_A_B D1
@@ -9,37 +10,31 @@
 #define RGB_B_G D6
 #define RGB_B_R D7
 
+DimmableRGBLED *RGB_A = new DimmableRGBLED(RGB_A_R, RGB_A_G, RGB_A_B);
+DimmableRGBLED *RGB_B = new DimmableRGBLED(RGB_B_R, RGB_B_G, RGB_B_B);
+
 // Define RGB LED behavior on wake.
 void wake()
 {
-  analogWrite(RGB_A_R, 0);
-  analogWrite(RGB_A_G, 255);
-  analogWrite(RGB_A_B, 0);
-  analogWrite(RGB_B_R, 0);
-  analogWrite(RGB_B_G, 255);
-  analogWrite(RGB_B_B, 0);
+  int color[] = {0, 255, 0};
+  RGB_A->immediate(color);
+  RGB_B->immediate(color);
 }
 
 // Define RGB LED behavior on sleep.
 void sleep()
 {
-  analogWrite(RGB_A_R, 210);
-  analogWrite(RGB_A_G, 0);
-  analogWrite(RGB_A_B, 255);
-  analogWrite(RGB_B_R, 210);
-  analogWrite(RGB_B_G, 0);
-  analogWrite(RGB_B_B, 255);
+  int color[] = {210, 0, 255};
+  RGB_A->immediate(color);
+  RGB_B->immediate(color);
 }
 
 // Define RGB LED behavior when turned off.
 void off()
 {
-  digitalWrite(RGB_A_R, LOW);
-  digitalWrite(RGB_A_G, LOW);
-  digitalWrite(RGB_A_B, LOW);
-  digitalWrite(RGB_B_R, LOW);
-  digitalWrite(RGB_B_G, LOW);
-  digitalWrite(RGB_B_B, LOW);
+  int color[] = {0, 0, 0};
+  RGB_A->immediate(color);
+  RGB_B->immediate(color);
 }
 
 // To run in setup() - set the pin modes and turn off.

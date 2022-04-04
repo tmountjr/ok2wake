@@ -2,8 +2,6 @@
 #include <LinkedList.h>
 #include <LEDEvent.h>
 #include <unity.h>
-#include <iostream>
-#include <stdexcept>
 
 LinkedList<LEDEvent> ll;
 

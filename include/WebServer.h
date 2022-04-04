@@ -41,7 +41,7 @@ void getStatusResponse()
   else if (method == HTTP_GET)
   {
     char buff[1024];
-    sprintf(buff, "{\"t\":%lu,\"s\":%d}\r\n", timeClient.getEpochTime(), current.ledstate);
+    sprintf(buff, "{\"t\":%lu,\"s\":%d}\r\n", timeClient.getEpochTime(), current->data->ledstate);
     server.send(200, "application/json", buff);
   }
   else
@@ -76,7 +76,7 @@ void resetResponse() {
   if (!(method == HTTP_POST || method == HTTP_PUT)) {
     invalidRequestResponse(405, "Method Not Allowed");
   }
-  targetLedStatus = current.ledstate;
+  targetLedStatus = current->data->ledstate;
   server.send(200, "text/plain", "OK");
 }
 

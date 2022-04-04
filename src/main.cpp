@@ -31,33 +31,32 @@
 #define RGB_B_G D6
 #define RGB_B_R D7
 
-// Define this here to enable web logging; configure the logging in src/weblog_config.h
-// #define WEBLOG
-#ifdef WEBLOG
-#include <Weblog.h>
-Weblog weblog;
-#endif
-
-// Rearrange a queue such that the next event to trigger is at the head of the queue.
-void orderQueue(ArduinoQueue<LEDEvent> &q)
+// Find the event that is next to fire.
+void findCurrent(LinkedList<LEDEvent> l)
 {
-  // cycle through the queue and find the first timestamp that hasn't happened yet
-  // assume an ordered list
-  for (int i = 0; i < q.count(); i++)
+  current = l.head;
+  nextUp = current->next;
+
+  int currentHour = timeClient.getHours();
+  int currentMinute = timeClient.getMinutes();
+
+  // Edge case: if the first event is future or the last event is past, don't loop
+  // because in both cases we use the head of the list.
+  if (
+      l.tail->data->isPast(currentHour, currentMinute) ||
+      l.head->data->isFuture(currentHour, currentMinute))
   {
-    LEDEvent c = q.peek();
-    if (
-        c.hour > timeClient.getHours() ||
-        (c.hour == timeClient.getHours() && c.minute >= timeClient.getMinutes()))
-    {
-      // the head of the queue is now the next one to kick off, we're done.
-      break;
-    }
-    q.pop();
-    q.push(c);
+    current = l.tail;
+    nextUp = current->next;
+    return;
   }
-  // at this point the queue should have the next item at the head of the line,
-  // even if it cycled back to the original order.
+
+  // Set the pointers to where current is in the past and next is in the future.
+  while (!(current->data->isPast(currentHour, currentMinute) && current->next->data->isFuture(currentHour, currentMinute)))
+  {
+    current = current->next;
+    nextUp = current->next;
+  }
 }
 
 void wake()
@@ -133,55 +132,27 @@ void setup()
   Serial.println(" Done!");
   Serial.printf("Started running at %s\n\n", timeClient.getFormattedTime());
 
-#ifdef WEBLOG
-  weblog.post("[setup] Started running at " + timeClient.getFormattedTime());
-  delay(3000);
-#endif
-
-  LEDEvent am(7, 0, LEDEvent::LED_STATE_WAKE);
-  LEDEvent midday(8, 0, LEDEvent::LED_STATE_OFF);
-  LEDEvent pm(18, 30, LEDEvent::LED_STATE_SLEEP);
-  LEDEvent overnight(19, 0, LEDEvent::LED_STATE_OFF);
-  q.push(am);
-  q.push(midday);
-  q.push(pm);
-  q.push(overnight);
-  orderQueue(q);
-  current = q.last();
-  next = q.peek();
-  targetLedStatus = current.ledstate;
-
-  Serial.printf("{\"first\":{\"hour\":%d,\"minute\":%d,\"ledstate\":%d},\"last\":{\"hour\":%d,\"minute\":%d,\"ledstate\":%d}}\"\n",
-                next.hour,
-                next.minute,
-                next.ledstate,
-                current.hour,
-                current.minute,
-                current.ledstate);
-
-#ifdef WEBLOG
-  LEDEvent next = q.peek();
-  String msg = "[setup] Next event time: ";
-  msg += next.hour + "h";
-  msg += ":";
-  msg += next.minute + "m";
-  weblog.post(msg);
-  delay(3000);
-  weblog.post("[setup] Current state: " + targetLedStatus);
-  delay(3000);
-#endif
+  LEDEvent *am = new LEDEvent(7, 0, LEDEvent::LED_STATE_WAKE);
+  LEDEvent *midday = new LEDEvent(8, 0, LEDEvent::LED_STATE_OFF);
+  LEDEvent *pm = new LEDEvent(18, 30, LEDEvent::LED_STATE_SLEEP);
+  LEDEvent *overnight = new LEDEvent(19, 0, LEDEvent::LED_STATE_OFF);
+  ll.add(am);
+  ll.add(midday);
+  ll.add(pm);
+  ll.add(overnight);
+  findCurrent(ll);
+  targetLedStatus = current->data->ledstate;
 }
 
 void loop()
 {
-  if (next.hour == timeClient.getHours() && next.minute == timeClient.getMinutes())
+  if (nextUp->data->hour == timeClient.getHours() && nextUp->data->minute == timeClient.getMinutes())
   {
-    current = next;
-    q.pop();
-    q.push(next);
-    next = q.peek();
-    targetLedStatus = current.ledstate;
+    current = current->next;
+    nextUp = current->next;
+    targetLedStatus = current->data->ledstate;
   }
+
   switch (targetLedStatus)
   {
   case LEDEvent::LED_STATE_WAKE:

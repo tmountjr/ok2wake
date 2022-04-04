@@ -24,10 +24,9 @@ void getEventsResponse()
   {
     invalidRequestResponse(405, "Method Not Allowed");
   }
-  char *contentType = "application/json";
   if (method == HTTP_HEAD)
   {
-    server.send(200, contentType, "");
+    server.send(200, "application/json", "");
   }
 
   Node<LEDEvent> *c = current;

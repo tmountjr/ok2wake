@@ -5,6 +5,7 @@
  */
 
 #include "globals.h"
+#include <ArduinoJson.h>
 
 void notFoundResponse()
 {
@@ -16,19 +17,41 @@ void invalidRequestResponse(int status = 400, String msg = "Bad Request")
   server.send(status, "text/plain", msg);
 }
 
-void getEventsResponse() {
+void getEventsResponse()
+{
   HTTPMethod method = server.method();
-  if (!(method == HTTP_GET || method == HTTP_HEAD)) {
+  if (!(method == HTTP_GET || method == HTTP_HEAD))
+  {
     invalidRequestResponse(405, "Method Not Allowed");
   }
   char *contentType = "application/json";
-  if (method == HTTP_HEAD) {
+  if (method == HTTP_HEAD)
+  {
     server.send(200, contentType, "");
   }
 
-  char buff[1024];
-  sprintf(buff, "{\"error\":\"not yet implemented\"}");
-  server.send(200, contentType, buff);
+  Node<LEDEvent> *c = current;
+
+  DynamicJsonDocument jsonObject(1024);
+  String jsonObjectString;
+  JsonArray events = jsonObject.createNestedArray("events");
+
+  JsonObject currentObject = events.createNestedObject();
+  currentObject["hour"] = c->data->hour;
+  currentObject["minute"] = c->data->minute;
+  currentObject["state"] = c->data->ledstate;
+
+  while (c->next != current)
+  {
+    currentObject = events.createNestedObject();
+    currentObject["hour"] = c->next->data->hour;
+    currentObject["minute"] = c->next->data->minute;
+    currentObject["state"] = c->next->data->ledstate;
+    c = c->next;
+  }
+
+  serializeJson(jsonObject, jsonObjectString);
+  server.send(200, "application/json", jsonObjectString);
 }
 
 void getStatusResponse()
@@ -40,9 +63,12 @@ void getStatusResponse()
   }
   else if (method == HTTP_GET)
   {
-    char buff[1024];
-    sprintf(buff, "{\"t\":%lu,\"s\":%d}\r\n", timeClient.getEpochTime(), current->data->ledstate);
-    server.send(200, "application/json", buff);
+    DynamicJsonDocument jsonObject(1024);
+    jsonObject["t"] = timeClient.getEpochTime();
+    jsonObject["s"] = targetLedStatus;
+    String jsonObjectString;
+    serializeJson(jsonObject, jsonObjectString);
+    server.send(200, "application/json", jsonObjectString);
   }
   else
   {
@@ -58,10 +84,13 @@ void setLedStatusResponse()
     invalidRequestResponse(405, "Method Not Allowed");
   }
   // Go through the input and look for "ledstate"
-  for (int i = 0; i < server.args(); i++) {
-    if (server.argName(i) == "ledstate") {
+  for (int i = 0; i < server.args(); i++)
+  {
+    if (server.argName(i) == "ledstate")
+    {
       int newState = server.arg(i).toInt();
-      if (newState == LEDEvent::LED_STATE_OFF || newState == LEDEvent::LED_STATE_SLEEP || newState == LEDEvent::LED_STATE_WAKE) {
+      if (newState == LEDEvent::LED_STATE_OFF || newState == LEDEvent::LED_STATE_SLEEP || newState == LEDEvent::LED_STATE_WAKE)
+      {
         targetLedStatus = newState;
         server.send(200, "text/plain", "OK");
       }
@@ -71,9 +100,11 @@ void setLedStatusResponse()
   invalidRequestResponse();
 }
 
-void resetResponse() {
+void resetResponse()
+{
   HTTPMethod method = server.method();
-  if (!(method == HTTP_POST || method == HTTP_PUT)) {
+  if (!(method == HTTP_POST || method == HTTP_PUT))
+  {
     invalidRequestResponse(405, "Method Not Allowed");
   }
   targetLedStatus = current->data->ledstate;

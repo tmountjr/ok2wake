@@ -55,9 +55,7 @@ void DimmableLED::fade(int startValue, int endValue, unsigned long fadeDuration)
     this->_startTime = currentTick;
     this->_valueDistance = endValue - startValue;
     this->_setup = true;
-    this->complete = false;
-
-    // Serial.printf("Setup complete! Going from %d to %d in %lu ticks.\n", this->startValue, this->endValue, this->fadeDuration);
+    // this->complete = false;
   }
 
   if (this->currentValue != this->endValue)
@@ -75,7 +73,7 @@ void DimmableLED::fade(int startValue, int endValue, unsigned long fadeDuration)
   }
   else
   {
-    this->complete = true;
+    // this->complete = true;
 #ifdef DEBUG
     Serial.println("Done!");
 #endif
@@ -85,9 +83,10 @@ void DimmableLED::fade(int startValue, int endValue, unsigned long fadeDuration)
 }
 
 void DimmableLED::immediate(int value) {
+  this->endValue = value;
   this->currentValue = value;
   analogWrite(this->_pin, value);
-  this->complete = true;
+  // this->complete = true;
 }
 
 void DimmableLED::reset()
@@ -97,6 +96,15 @@ void DimmableLED::reset()
   this->fadeDuration = -1;
   this->currentValue = -1;
   this->_valueDistance = 0;
-  this->complete = false;
+  // this->complete = false;
   this->_setup = false;
+}
+
+bool DimmableLED::complete()
+{
+  return (
+    this->_setup
+    && this->currentValue == this->endValue
+    && millis() >= this->_startTime + this->fadeDuration
+  );
 }

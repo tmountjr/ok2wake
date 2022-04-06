@@ -14,7 +14,7 @@ protected:
   int _pin;
 
   // Whether or not the fade has been set up.
-  byte _setup = false;
+  bool _setup = false;
 
 public:
   DimmableLED();
@@ -33,7 +33,7 @@ public:
   unsigned long fadeDuration;
 
   // Whether or not the fade has completed.
-  byte complete = false;
+  bool complete();
 
   /**
    * Determine the value of this LED at any given tick.

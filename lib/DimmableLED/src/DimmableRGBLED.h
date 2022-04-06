@@ -1,5 +1,13 @@
 #include "DimmableLED.h"
 
+class RGBValues
+{
+public:
+  RGBValues(int r, int g, int b);
+
+  int red, green, blue;
+};
+
 class DimmableRGBLED
 {
 protected:
@@ -12,9 +20,9 @@ protected:
 
 public:
   DimmableRGBLED(int redPin, int greenPin, int bluePin);
-  int * _valueAtTick(unsigned long currentTick, unsigned long startTick);
-  void fade(int startValue[], int endValue[], unsigned long fadeDuration);
-  void immediate(int value[]);
+  RGBValues _valueAtTick(unsigned long currentTick, unsigned long startTick);
+  void fade(RGBValues startValue, RGBValues endValue, unsigned long fadeDuration);
+  void immediate(RGBValues value);
   void reset();
 
   byte complete = false;

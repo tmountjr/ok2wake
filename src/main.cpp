@@ -43,6 +43,9 @@ void setup()
   Serial.println(WiFi.localIP());
   Serial.println("");
 
+  // Set up filesystem.
+  LittleFS.begin();
+
   // Set up WiFi server
   wifiServerSetup();
 
@@ -62,14 +65,12 @@ void setup()
   Serial.println(" Done!");
   Serial.printf("Started running at %s\n\n", timeClient.getFormattedTime());
 
+  LEDEvent *preAM = new LEDEvent(6, 0, LEDEvent::LED_STATE_SLEEP);
   LEDEvent *am = new LEDEvent(7, 0, LEDEvent::LED_STATE_WAKE);
   LEDEvent *midday = new LEDEvent(8, 0, LEDEvent::LED_STATE_OFF);
-  LEDEvent *pm = new LEDEvent(18, 30, LEDEvent::LED_STATE_SLEEP);
-  LEDEvent *overnight = new LEDEvent(19, 0, LEDEvent::LED_STATE_OFF);
+  ll.add(preAM);
   ll.add(am);
   ll.add(midday);
-  ll.add(pm);
-  ll.add(overnight);
   findCurrent(ll);
   targetLedStatus = current->data->ledstate;
 }

@@ -6,6 +6,14 @@
 
 #include "globals.h"
 #include <ArduinoJson.h>
+#include <LittleFS.h>
+
+void corsResponse()
+{
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.send(204, "text/plain", "");
+  
+}
 
 void notFoundResponse()
 {
@@ -17,49 +25,69 @@ void invalidRequestResponse(int status = 400, String msg = "Bad Request")
   server.send(status, "text/plain", msg);
 }
 
-void getEventsResponse()
+void getHomeResponse()
 {
   HTTPMethod method = server.method();
   if (!(method == HTTP_GET || method == HTTP_HEAD))
-  {
     invalidRequestResponse(405, "Method Not Allowed");
+  else
+  {
+    File index = LittleFS.open("index.html", "r");
+    String indexStr;
+    if (index.available())
+    {
+      indexStr = index.readString();
+      server.send(200, "text/html", indexStr);
+    }
+    else
+      server.send(503, "text/plain", "Service Unavailable");
   }
+}
+
+void getEventsResponse()
+{
+  HTTPMethod method = server.method();
+  if (!(method == HTTP_GET || method == HTTP_HEAD || method == HTTP_OPTIONS))
+    invalidRequestResponse(405, "Method Not Allowed");
+
   if (method == HTTP_HEAD)
-  {
     server.send(200, "application/json", "");
-  }
-
-  Node<LEDEvent> *c = current;
-
-  DynamicJsonDocument jsonObject(1024);
-  String jsonObjectString;
-  JsonArray events = jsonObject.createNestedArray("events");
-
-  JsonObject currentObject = events.createNestedObject();
-  currentObject["hour"] = c->data->hour;
-  currentObject["minute"] = c->data->minute;
-  currentObject["state"] = c->data->ledstate;
-
-  while (c->next != current)
+  else if (method == HTTP_OPTIONS)
+    corsResponse();
+  else
   {
-    currentObject = events.createNestedObject();
-    currentObject["hour"] = c->next->data->hour;
-    currentObject["minute"] = c->next->data->minute;
-    currentObject["state"] = c->next->data->ledstate;
-    c = c->next;
-  }
+    Node<LEDEvent> *c = current;
 
-  serializeJson(jsonObject, jsonObjectString);
-  server.send(200, "application/json", jsonObjectString);
+    DynamicJsonDocument jsonObject(1024);
+    String jsonObjectString;
+    JsonArray events = jsonObject.createNestedArray("events");
+
+    JsonObject currentObject = events.createNestedObject();
+    currentObject["hour"] = c->data->hour;
+    currentObject["minute"] = c->data->minute;
+    currentObject["state"] = c->data->ledstate;
+
+    while (c->next != current)
+    {
+      currentObject = events.createNestedObject();
+      currentObject["hour"] = c->next->data->hour;
+      currentObject["minute"] = c->next->data->minute;
+      currentObject["state"] = c->next->data->ledstate;
+      c = c->next;
+    }
+
+    serializeJson(jsonObject, jsonObjectString);
+    server.send(200, "application/json", jsonObjectString);
+  }
 }
 
 void getStatusResponse()
 {
   HTTPMethod method = server.method();
   if (method == HTTP_HEAD)
-  {
     server.send(200, "application/json", "");
-  }
+  else if (method == HTTP_OPTIONS)
+    corsResponse();
   else if (method == HTTP_GET)
   {
     DynamicJsonDocument jsonObject(1024);
@@ -70,44 +98,47 @@ void getStatusResponse()
     server.send(200, "application/json", jsonObjectString);
   }
   else
-  {
     invalidRequestResponse(405, "Method Not Allowed");
-  }
 }
 
 void setLedStatusResponse()
 {
   HTTPMethod method = server.method();
   if (!(method == HTTP_POST || method == HTTP_PUT))
-  {
     invalidRequestResponse(405, "Method Not Allowed");
-  }
-  // Go through the input and look for "ledstate"
-  for (int i = 0; i < server.args(); i++)
+  else if (method == HTTP_OPTIONS)
+    corsResponse();
+  else
   {
-    if (server.argName(i) == "ledstate")
+    // Go through the input and look for "ledstate"
+    for (int i = 0; i < server.args(); i++)
     {
-      int newState = server.arg(i).toInt();
-      if (newState == LEDEvent::LED_STATE_OFF || newState == LEDEvent::LED_STATE_SLEEP || newState == LEDEvent::LED_STATE_WAKE)
+      if (server.argName(i) == "ledstate")
       {
-        targetLedStatus = newState;
-        server.send(200, "text/plain", "OK");
+        int newState = server.arg(i).toInt();
+        if (newState == LEDEvent::LED_STATE_OFF || newState == LEDEvent::LED_STATE_SLEEP || newState == LEDEvent::LED_STATE_WAKE)
+        {
+          targetLedStatus = newState;
+          server.send(200, "text/plain", "OK");
+        }
+        break;
       }
-      break;
     }
+    invalidRequestResponse();
   }
-  invalidRequestResponse();
 }
 
 void resetResponse()
 {
   HTTPMethod method = server.method();
   if (!(method == HTTP_POST || method == HTTP_PUT))
-  {
     invalidRequestResponse(405, "Method Not Allowed");
+  else if (method == HTTP_OPTIONS)
+    corsResponse();
+  else {
+    targetLedStatus = current->data->ledstate;
+    server.send(200, "text/plain", "OK");
   }
-  targetLedStatus = current->data->ledstate;
-  server.send(200, "text/plain", "OK");
 }
 
 void wifiServerSetup()
@@ -116,6 +147,8 @@ void wifiServerSetup()
   server.on("/status/set", setLedStatusResponse);
   server.on("/status", getStatusResponse);
   server.on("/reset", resetResponse);
+  server.on("/", getHomeResponse);
+  server.serveStatic("/main.js", LittleFS, "main.js");
 
   server.onNotFound(notFoundResponse);
   server.begin();

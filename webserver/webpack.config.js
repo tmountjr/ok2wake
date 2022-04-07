@@ -3,9 +3,15 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const HtmlWebpackExternalsPlugin = require('html-webpack-externals-plugin');
 const path = require('path');
 
+const flashDir = path.resolve(__dirname, '../data');
+
 module.exports = {
   externals: {
     vue: 'Vue',
+  },
+  devtool: 'inline-source-map',
+  devServer: {
+    static: flashDir,
   },
   module: {
     rules: [
@@ -65,6 +71,8 @@ module.exports = {
     }),
   ],
   output: {
-    path: path.resolve(__dirname, '../data'),
+    path: flashDir,
+    clean: true,
+    publicPath: '/',
   }
 }

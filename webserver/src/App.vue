@@ -76,7 +76,13 @@ header a:focus {
 <script>
 import * as axios from 'axios';
 
-const host = 'http://192.168.86.191:8080';
+const changeState = async (newState) => {
+  await axios.post(`/status/set`, `ledstate=${newState}`, {
+    headers: {
+      'content-type': 'text/plain'
+    }
+  });
+};
 
 export default {
   name: 'control',
@@ -91,26 +97,25 @@ export default {
   },
   methods: {
     async update() {
-      const resp = await fetch(`${host}/status`);
+      const resp = await fetch('/status');
       const status = await resp.json();
-      console.log(status);
       this.status.t = status.t;
       this.status.s = status.s;
     },
     async wake() {
-      await axios.post(`${host}/status/set`, 'ledstate=1');
+      await changeState(1);
       await this.update();
     },
     async sleep() {
-      await axios.post(`${host}/status/set`, 'ledstate=2');
+      await changeState(2);
       await this.update();
     },
     async off() {
-      await axios.post(`${host}/status/set`, 'ledstate=3');
+      await changeState(3);
       await this.update();
     },
     async reset() {
-      await axios.post(`${host}/reset`);
+      await axios.post('/reset');
       await this.update();
     },
   },

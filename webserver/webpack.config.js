@@ -9,7 +9,6 @@ module.exports = {
   externals: {
     vue: 'Vue',
   },
-  devtool: 'inline-source-map',
   devServer: {
     static: flashDir,
   },

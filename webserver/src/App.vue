@@ -27,19 +27,23 @@
             <button class="pure-button" @click="reset">Reset to default</button>
           </div>
         </div>
-        <!-- <div class="pure-u-1">
-          <h1>Config Options</h1>
-          <form class="pure-form">
-            <fieldset>
-              <legend>Wake State Color</legend>
-              <input type="color" name="wake_color" id="wake_color" v-model="wakeColor">
-            </fieldset>
-            <fieldset>
-              <legend>Sleep State Color</legend>
-              <input type="color" name="sleep_color" id="sleep_color" v-model="sleepColor">
-            </fieldset>
-          </form>
-        </div> -->
+        <div class="pure-u-1">
+          <h1>Events</h1>
+
+          <div class="pure-g">
+            <div class="pure-u-1" v-if="events.length == 0">
+              <p>Click "Refresh Device Data" above to populate lists.</p>
+            </div>
+            <div class="pure-u-1" v-if="'hour' in current">
+              <h2 class="condensed">Current</h2>
+              <p v-if="'hour' in current">Since {{ `${('00' + current.hour).slice(-2)}:${('00' + current.minute).slice(-2)}` }} - {{ translatedStatus(current.ledstate) }}</p>
+            </div>
+            <div class="pure-u-1" v-if="events.length">
+              <h2 class="condensed">Upcoming</h2>
+              <p v-for="(event, i) in events" :key="`event-${i}`">At {{ `${('00' + event.hour).slice(-2)}:${('00' + event.minute).slice(-2)}` }} - {{ translatedStatus(event.ledstate) }}</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -71,17 +75,32 @@ header a:focus {
   margin-bottom: 10px;
   font-size: 115%;
 }
+
+h2.condensed {
+  margin-top: 0;
+}
 </style>
 
 <script>
 import * as axios from 'axios';
 
+const host = "";
+
 const changeState = async (newState) => {
-  await axios.post(`/status/set`, `ledstate=${newState}`, {
-    headers: {
-      'content-type': 'text/plain'
-    }
-  });
+  await axios.post(`${host}/status/set`, `ledstate=${newState}`);
+};
+
+const translatedStatus = (status) => {
+  switch (status) {
+    case 1:
+      return 'Wake mode';
+    case 2:
+      return 'Sleep mode';
+    case 3:
+      return 'Off';
+    default:
+      return 'N/A';
+  }
 };
 
 export default {
@@ -91,16 +110,16 @@ export default {
     return {
       status: {},
       events: [],
-      wakeColor: '#00ff00',
-      sleepColor: '#ff00ff',
+      current: {},
     };
   },
   methods: {
     async update() {
-      const resp = await fetch('/status');
+      const resp = await fetch(`${host}/status`);
       const status = await resp.json();
       this.status.t = status.t;
       this.status.s = status.s;
+      await this.currentEvent();
     },
     async wake() {
       await changeState(1);
@@ -115,9 +134,19 @@ export default {
       await this.update();
     },
     async reset() {
-      await axios.post('/reset');
+      await axios.post(`${host}/reset`);
       await this.update();
     },
+    async currentEvent() {
+      const resp = await axios.get(`${host}/events`);
+      const { events } = resp.data;
+      const c = events.shift();
+      this.current = c;
+      this.events = events;
+    },
+    translatedStatus(status) {
+      return translatedStatus(status);
+    }
   },
   computed: {
     deviceTime() {
@@ -133,12 +162,11 @@ export default {
     },
     deviceStatus() {
       if ('s' in this.status) {
-        if (this.status.s === 1) return 'Wake mode';
-        if (this.status.s === 2) return 'Sleep mode';
-        return 'Off';
+        // return this.translatedStatus(this.status.s);
+        return translatedStatus(this.status.s);
       }
       return 'N/A';
-    }
+    },
   },
 }
 </script>

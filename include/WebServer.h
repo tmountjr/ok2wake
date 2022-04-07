@@ -77,6 +77,7 @@ void getEventsResponse()
     }
 
     serializeJson(jsonObject, jsonObjectString);
+    server.sendHeader("Access-Control-Allow-Origin", "*");
     server.send(200, "application/json", jsonObjectString);
   }
 }
@@ -95,6 +96,7 @@ void getStatusResponse()
     jsonObject["s"] = targetLedStatus;
     String jsonObjectString;
     serializeJson(jsonObject, jsonObjectString);
+    server.sendHeader("Access-Control-Allow-Origin", "*");
     server.send(200, "application/json", jsonObjectString);
   }
   else

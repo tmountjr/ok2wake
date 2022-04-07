@@ -17,7 +17,7 @@ const webpackConfig = require('./webpack.config');
 const compiler = webpack({
   ...webpackConfig,
   mode: 'development',
-  devtool: false,
+  devtool: 'eval-source-map',
 });
 
 app.use(bodyParser.text());

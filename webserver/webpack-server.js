@@ -46,7 +46,7 @@ function findCurrent() {
 // stub some additional api routes to serve static data
 app.post('/events/set', (req, res) => {
   // console.log(req.body);
-  let inbound = req.body.map(e => new LEDEvent(e.hour, e.minute, e.ledstate));
+  let inbound = req.body.map(e => new LEDEvent(e.hour, e.minute, e.state));
   defaultEvents = inbound;
   res.status(200).send();
 });
@@ -66,7 +66,7 @@ app.get('/status', (req, res) => {
   const current = findCurrent();
   res.json({
     t: Math.floor((new Date()).valueOf() / 1000),
-    s: current.status
+    s: current.state,
   });
 });
 

@@ -65,14 +65,14 @@ void getEventsResponse()
     JsonObject currentObject = events.createNestedObject();
     currentObject["hour"] = c->data->hour;
     currentObject["minute"] = c->data->minute;
-    currentObject["state"] = c->data->ledstate;
+    currentObject["state"] = c->data->state;
 
     while (c->next != current)
     {
       currentObject = events.createNestedObject();
       currentObject["hour"] = c->next->data->hour;
       currentObject["minute"] = c->next->data->minute;
-      currentObject["state"] = c->next->data->ledstate;
+      currentObject["state"] = c->next->data->state;
       c = c->next;
     }
 
@@ -112,10 +112,10 @@ void setLedStatusResponse()
     corsResponse();
   else
   {
-    // Go through the input and look for "ledstate"
+    // Go through the input and look for "state"
     for (int i = 0; i < server.args(); i++)
     {
-      if (server.argName(i) == "ledstate")
+      if (server.argName(i) == "state")
       {
         int newState = server.arg(i).toInt();
         if (newState == LEDEvent::LED_STATE_OFF || newState == LEDEvent::LED_STATE_SLEEP || newState == LEDEvent::LED_STATE_WAKE)
@@ -138,7 +138,7 @@ void resetResponse()
   else if (method == HTTP_OPTIONS)
     corsResponse();
   else {
-    targetLedStatus = current->data->ledstate;
+    targetLedStatus = current->data->state;
     server.send(200, "text/plain", "OK");
   }
 }

@@ -78,7 +78,7 @@ void setup()
   ll.add(am);
   ll.add(midday);
   findCurrent(ll);
-  targetLedStatus = current->data->ledstate;
+  targetLedStatus = current->data->state;
 }
 
 void loop()
@@ -87,7 +87,7 @@ void loop()
   {
     current = current->next;
     nextUp = current->next;
-    targetLedStatus = current->data->ledstate;
+    targetLedStatus = current->data->state;
   }
 
   switch (targetLedStatus)

@@ -51,7 +51,7 @@
                   <span>h</span>
                   <input class="pure-input-1-4" type="number" name="minute" :id="`event-edit-${i}-minute`" v-model.number="event.minute">
                   <span>m</span>
-                  <select class="pure-input-1-4" name="state" :id="`event-edit-${i}-state`" v-model.number="event.status">
+                  <select class="pure-input-1-4" name="state" :id="`event-edit-${i}-state`" v-model.number="event.state">
                     <option value="1">Wake</option>
                     <option value="2">Sleep</option>
                     <option value="3">Off</option>
@@ -130,7 +130,7 @@ import { LEDEvent } from './LEDEvent.model';
 const host = "";
 
 const changeState = async (newState) => {
-  await axios.post(`${host}/status/set`, `ledstate=${newState}`);
+  await axios.post(`${host}/status/set`, `state=${newState}`);
 };
 
 const translatedStatus = (status) => {
@@ -185,7 +185,7 @@ export default {
     async currentEvent() {
       const resp = await axios.get(`${host}/events`);
       let { events } = resp.data;
-      events = events.map(e => new LEDEvent(e.hour, e.minute, e.ledstate));
+      events = events.map(e => new LEDEvent(e.hour, e.minute, e.state));
       this.events = events;
     },
     translatedStatus(status) {

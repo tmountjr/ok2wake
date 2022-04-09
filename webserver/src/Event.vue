@@ -26,7 +26,7 @@ export default {
       return `${('00' + this.event.hour).slice(-2)}:${('00' + this.event.minute).slice(-2)}`;
     },
     translatedStatus() {
-      switch (this.event.status) {
+      switch (this.event.state) {
         case 1:
           return 'Wake state';
         case 2:

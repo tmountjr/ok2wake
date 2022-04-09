@@ -5,7 +5,7 @@ class LEDEvent
 {
 public:
   LEDEvent();
-  LEDEvent(int hour, int minute, int ledstate);
+  LEDEvent(int hour, int minute, int state);
 
   /**
    * Determine if this event is to take place after a specified hour and minute.
@@ -28,7 +28,7 @@ public:
    */
   bool isPast(int targeHour, int targetMinute);
 
-  int hour, minute, ledstate;
+  int hour, minute, state;
 
   static const int LED_STATE_WAKE = 1;
   static const int LED_STATE_SLEEP = 2;
@@ -38,13 +38,13 @@ public:
 LEDEvent::LEDEvent() {
   this->hour = 0;
   this->minute = 0;
-  this->ledstate = this->LED_STATE_OFF;
+  this->state = this->LED_STATE_OFF;
 }
 
-LEDEvent::LEDEvent(int hour, int minute, int ledstate) {
+LEDEvent::LEDEvent(int hour, int minute, int state) {
   this->hour = hour;
   this->minute = minute;
-  this->ledstate = ledstate;
+  this->state = state;
 }
 
 bool LEDEvent::isFuture(int targetHour, int targetMinute) {

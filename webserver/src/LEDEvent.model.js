@@ -3,10 +3,10 @@ class LEDEvent {
   static LED_STATE_SLEEP = 2;
   static LED_STATE_OFF = 3;
 
-  constructor(hour, minute, status) {
+  constructor(hour, minute, state) {
     this.hour = hour;
     this.minute = minute;
-    this.status = status;
+    this.state = state;
   }
 
   isFuture(targetHour, targetMinute) {
@@ -40,7 +40,7 @@ class LEDEvent {
     return {
       hour: this.hour,
       minute: this.minute,
-      ledstate: this.status
+      state: this.state
     };
   }
 }

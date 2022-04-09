@@ -34,13 +34,36 @@
             <div class="pure-u-1" v-if="events.length == 0">
               <p>Click "Refresh Device Data" above to populate lists.</p>
             </div>
-            <div class="pure-u-1" v-if="'hour' in current">
-              <h2 class="condensed">Current</h2>
-              <p v-if="'hour' in current">Since {{ `${('00' + current.hour).slice(-2)}:${('00' + current.minute).slice(-2)}` }} - {{ translatedStatus(current.ledstate) }}</p>
-            </div>
-            <div class="pure-u-1" v-if="events.length">
-              <h2 class="condensed">Upcoming</h2>
-              <p v-for="(event, i) in events" :key="`event-${i}`">At {{ `${('00' + event.hour).slice(-2)}:${('00' + event.minute).slice(-2)}` }} - {{ translatedStatus(event.ledstate) }}</p>
+
+            <Events v-if="events.length > 0" :events="events" />
+
+            <div class="pure-u-1">
+              <h2 class="condensed">Edit Schedule</h2>
+              <form class="pure-form">
+                <fieldset class="inline" v-for="(event,i) in events" :key="`event-edit-${i}`">
+                  <legend>
+                    Event {{ i }} 
+                    <button class="pure-button button-error button-small" @click="removeEvent($event, i)">
+                      <i class="fa fa-trash"></i>
+                    </button>
+                  </legend>
+                  <input class="pure-input-1-4" type="number" name="hour" :id="`event-edit-${i}-hour`" v-model.number="event.hour" />
+                  <span>h</span>
+                  <input class="pure-input-1-4" type="number" name="minute" :id="`event-edit-${i}-minute`" v-model.number="event.minute">
+                  <span>m</span>
+                  <select class="pure-input-1-4" name="state" :id="`event-edit-${i}-state`" v-model.number="event.status">
+                    <option value="1">Wake</option>
+                    <option value="2">Sleep</option>
+                    <option value="3">Off</option>
+                  </select>
+                </fieldset>
+
+                <div class="pure-button-group" role="group">
+                  <button class="pure-button" @click="addEvent"><i class="fa fa-plus"></i></button>
+                  <button class="pure-button" @click="saveEvents"><i class="fa fa-save"></i></button>
+                </div>
+
+              </form>
             </div>
           </div>
         </div>
@@ -49,7 +72,7 @@
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .home-menu {
   padding: 0.5em;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
@@ -68,21 +91,41 @@ header a:focus {
 .buttonList {
   display: flex;
   flex-wrap: wrap;
+
+  button {
+    flex-basis: 100%;
+    margin-bottom: 10px;
+    font-size: 115%;
+  }
 }
 
-.buttonList button {
-  flex-basis: 100%;
-  margin-bottom: 10px;
-  font-size: 115%;
+fieldset.inline {
+  display: flex;
+  align-items: flex-start;
+
+  span {
+    margin: 0 0.5em;
+    align-self: center;
+  }
 }
 
-h2.condensed {
-  margin-top: 0;
+button.pure-button {
+  &.button-small {
+    font-size: 75%;
+  }
+
+  &.button-error {
+    color: white;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    background: rgb(202, 60, 60);
+  }
 }
 </style>
 
 <script>
 import * as axios from 'axios';
+import Events from './Events.vue';
+import { LEDEvent } from './LEDEvent.model';
 
 const host = "";
 
@@ -105,7 +148,9 @@ const translatedStatus = (status) => {
 
 export default {
   name: 'control',
-  components: [],
+  components: [
+    Events,
+  ],
   data() {
     return {
       status: {},
@@ -139,13 +184,32 @@ export default {
     },
     async currentEvent() {
       const resp = await axios.get(`${host}/events`);
-      const { events } = resp.data;
-      const c = events.shift();
-      this.current = c;
+      let { events } = resp.data;
+      events = events.map(e => new LEDEvent(e.hour, e.minute, e.ledstate));
       this.events = events;
     },
     translatedStatus(status) {
       return translatedStatus(status);
+    },
+    removeEvent(e, id) {
+      e.preventDefault();
+      if (id === 0) {
+        this.events = this.events.splice(1);
+      } else {
+        this.events = [...this.events.slice(0, id), ...this.events.slice(id + 1)];
+      }
+    },
+    addEvent(e) {
+      e.preventDefault();
+      const now = new Date();
+      this.events.push(new LEDEvent(now.getHours(), now.getMinutes(), LEDEvent.LED_STATE_OFF));
+    },
+    async saveEvents(e) {
+      e.preventDefault();
+      // sort the events list
+      this.events.sort((a, b) => a.secondsSinceMidnight() - b.secondsSinceMidnight());
+      await axios.post(`${host}/events/set`, this.events);
+      await this.update();
     }
   },
   computed: {
@@ -162,7 +226,6 @@ export default {
     },
     deviceStatus() {
       if ('s' in this.status) {
-        // return this.translatedStatus(this.status.s);
         return translatedStatus(this.status.s);
       }
       return 'N/A';

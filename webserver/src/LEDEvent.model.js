@@ -32,6 +32,10 @@ class LEDEvent {
     }
   }
 
+  secondsSinceMidnight() {
+    return (this.hour * 60 * 60) + (this.minute * 60);
+  }
+
   toJSON() {
     return {
       hour: this.hour,

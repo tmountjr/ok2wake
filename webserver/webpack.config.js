@@ -6,6 +6,9 @@ const path = require('path');
 const flashDir = path.resolve(__dirname, '../data');
 
 module.exports = {
+  stats: {
+    errorDetails: true,
+  },
   externals: {
     vue: 'Vue',
   },
@@ -23,10 +26,10 @@ module.exports = {
         loader: 'babel-loader'
       },
       {
-        test: /\.css$/,
-        use: ['style-loader', 'css-loader']
-      }
-    ]
+        test: /\.(sa|sc|c)ss$/,
+        use: ['style-loader', 'css-loader', 'sass-loader'],
+      },
+    ],
   },
   plugins: [
     new VueLoaderPlugin(),
@@ -57,6 +60,13 @@ module.exports = {
           entry: {
             path: 'https://unpkg.com/purecss@2.1.0/build/grids-responsive-min.css',
             type: 'css'
+          }
+        },
+        {
+          module: 'fontawesome',
+          entry: {
+            path: 'https://use.fontawesome.com/c652f8dc00.js',
+            type: 'js'
           }
         },
         {

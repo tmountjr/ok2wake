@@ -21,6 +21,7 @@ const compiler = webpack({
 });
 
 app.use(bodyParser.text());
+app.use(bodyParser.json());
 app.use(cors());
 app.use(logMiddleware);
 app.use(
@@ -32,7 +33,7 @@ app.use(
 const preAm = new LEDEvent(6, 0, LEDEvent.LED_STATE_SLEEP);
 const am = new LEDEvent(7, 0, LEDEvent.LED_STATE_WAKE);
 const midday = new LEDEvent(8, 0, LEDEvent.LED_STATE_OFF);
-const defaultEvents = [preAm, am, midday];
+let defaultEvents = [preAm, am, midday];
 
 function findCurrent() {
   if (defaultEvents[defaultEvents.length - 1].isPast() || defaultEvents[0].isFuture()) return defaultEvents[defaultEvents.length - 1];
@@ -43,6 +44,13 @@ function findCurrent() {
 }
 
 // stub some additional api routes to serve static data
+app.post('/events/set', (req, res) => {
+  // console.log(req.body);
+  let inbound = req.body.map(e => new LEDEvent(e.hour, e.minute, e.ledstate));
+  defaultEvents = inbound;
+  res.status(200).send();
+});
+
 app.get('/events', (req, res) => {
   res.json({
     events: defaultEvents
@@ -51,8 +59,7 @@ app.get('/events', (req, res) => {
 
 app.post('/status/set', (req, res) => {
   console.log(req.body);
-  // TODO: figure out how this looks coming from the frontend
-  res.json({});
+  res.status(200).send();
 });
 
 app.get('/status', (req, res) => {

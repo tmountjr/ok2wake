@@ -43,6 +43,12 @@ void setup()
   Serial.println(WiFi.localIP());
   Serial.println("");
 
+  if (!MDNS.begin("ok2wake")) {
+    Serial.println("mDNS setup unsuccessful.");
+  } else {
+    Serial.println("mDNS started; now available at ok2wake.local");
+  }
+
   // Set up filesystem.
   LittleFS.begin();
 

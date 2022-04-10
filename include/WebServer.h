@@ -44,6 +44,34 @@ void getHomeResponse()
   }
 }
 
+void setEventsResponse()
+{
+  HTTPMethod method = server.method();
+  if (!(method == HTTP_POST || method == HTTP_OPTIONS))
+    invalidRequestResponse(405, "Method Not Allowed");
+
+  if (method == HTTP_OPTIONS)
+    corsResponse();
+  else
+  {
+    // Serial.println(server.arg("plain"));
+    StaticJsonDocument<512> doc;
+    deserializeJson(doc, server.arg("plain"));
+    LinkedList<LEDEvent> newLL;
+    for (JsonObject item : doc.as<JsonArray>())
+    {
+      int hour = item["hour"];
+      int minute = item["minute"];
+      int state = item["state"];
+      LEDEvent *e = new LEDEvent(hour, minute, state);
+      newLL.add(e);
+    }
+    ll = newLL;
+    findCurrent(ll);
+    server.send(200, "text/plain");
+  }
+}
+
 void getEventsResponse()
 {
   HTTPMethod method = server.method();
@@ -145,6 +173,7 @@ void resetResponse()
 
 void wifiServerSetup()
 {
+  server.on("/events/set", setEventsResponse);
   server.on("/events", getEventsResponse);
   server.on("/status/set", setLedStatusResponse);
   server.on("/status", getStatusResponse);

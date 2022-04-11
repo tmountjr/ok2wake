@@ -1,7 +1,7 @@
 <template>
   <div id="control">
     <div class="header">
-      <div class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
+      <div class="home-menu pure-menu pure-menu-horizontal">
         <a href="" class="pure-menu-heading">ok2wake Control</a>
       </div>
     </div>
@@ -78,14 +78,19 @@
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
 
-header a:hover,
-header a:focus {
-  background: none;
-  border: none;
+.header {
+  position: sticky;
+  top: 0;
+  background: #fff;
+
+  a:hover, a:focus {
+    background: none;
+    border: none;
+  }
 }
 
 .content {
-  padding: 4em 1em 3em;
+  padding: 1em;
 }
 
 .buttonList {

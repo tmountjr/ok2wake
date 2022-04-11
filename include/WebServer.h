@@ -54,11 +54,10 @@ void setEventsResponse()
     corsResponse();
   else
   {
-    // Serial.println(server.arg("plain"));
-    StaticJsonDocument<512> doc;
-    deserializeJson(doc, server.arg("plain"));
+    StaticJsonDocument<512> inputDoc;
+    deserializeJson(inputDoc, server.arg("plain"));
     LinkedList<LEDEvent> newLL;
-    for (JsonObject item : doc.as<JsonArray>())
+    for (JsonObject item : inputDoc.as<JsonArray>())
     {
       int hour = item["hour"];
       int minute = item["minute"];
@@ -68,6 +67,33 @@ void setEventsResponse()
     }
     ll = newLL;
     findCurrent(ll);
+    
+    LittleFS.remove(eventsPath);
+    File file = LittleFS.open(eventsPath, "w");
+    if (!file)
+    {
+      Serial.println("Error creating user config file.");
+      server.send(500, "text/plain", "Cannot create user config file; the config has been saved in temporary flash storage.");
+    }
+    bool seenHead = false;
+    Node<LEDEvent> *c = ll.head;
+    StaticJsonDocument<512> outputDoc;
+    JsonArray events = outputDoc.createNestedArray("events");
+    while (!seenHead) {
+      JsonObject o = events.createNestedObject();
+      o["hour"] = c->data->hour;
+      o["minute"] = c->data->minute;
+      o["state"] = c->data->state;
+      c = c->next;
+      if (c == ll.head)
+        seenHead = true;
+    }
+    if (serializeJson(outputDoc, file) == 0)
+    {
+      Serial.println("Error writing new user config file.");
+      server.send(500, "text/plain", "Error saving new config file; the config has been saved in temporary flash storage.");
+    }
+
     server.send(200, "text/plain");
   }
 }
@@ -84,27 +110,21 @@ void getEventsResponse()
     corsResponse();
   else
   {
+    bool seenCurrent = false;
     Node<LEDEvent> *c = current;
-
-    DynamicJsonDocument jsonObject(1024);
-    String jsonObjectString;
-    JsonArray events = jsonObject.createNestedArray("events");
-
-    JsonObject currentObject = events.createNestedObject();
-    currentObject["hour"] = c->data->hour;
-    currentObject["minute"] = c->data->minute;
-    currentObject["state"] = c->data->state;
-
-    while (c->next != current)
-    {
-      currentObject = events.createNestedObject();
-      currentObject["hour"] = c->next->data->hour;
-      currentObject["minute"] = c->next->data->minute;
-      currentObject["state"] = c->next->data->state;
+    StaticJsonDocument<512> doc;
+    JsonArray events = doc.createNestedArray("events");
+    while (!seenCurrent) {
+      JsonObject o = events.createNestedObject();
+      o["hour"] = c->data->hour;
+      o["minute"] = c->data->minute;
+      o["state"] = c->data->state;
       c = c->next;
+      if (c == current)
+        seenCurrent = true;
     }
-
-    serializeJson(jsonObject, jsonObjectString);
+    String jsonObjectString;
+    serializeJson(doc, jsonObjectString);
     server.sendHeader("Access-Control-Allow-Origin", "*");
     server.send(200, "application/json", jsonObjectString);
   }

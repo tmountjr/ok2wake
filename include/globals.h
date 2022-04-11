@@ -23,6 +23,8 @@ byte targetLedStatus;
 LinkedList<LEDEvent> ll;
 Node<LEDEvent> *current, *nextUp;
 
+char *eventsPath = "events.json";
+
 // Find the event that is next to fire.
 void findCurrent(LinkedList<LEDEvent> l)
 {

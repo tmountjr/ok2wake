@@ -71,12 +71,28 @@ void setup()
   Serial.println(" Done!");
   Serial.printf("Started running at %s\n\n", timeClient.getFormattedTime());
 
-  LEDEvent *preAM = new LEDEvent(6, 0, LEDEvent::LED_STATE_SLEEP);
-  LEDEvent *am = new LEDEvent(7, 0, LEDEvent::LED_STATE_WAKE);
-  LEDEvent *midday = new LEDEvent(8, 0, LEDEvent::LED_STATE_OFF);
-  ll.add(preAM);
-  ll.add(am);
-  ll.add(midday);
+  // A sane set of defaults has been provided as part of the firmware in events.json.
+  File defaultEventList = LittleFS.open(eventsPath, "r");
+  StaticJsonDocument<512> doc;
+  DeserializationError e = deserializeJson(doc, defaultEventList);
+  if (e)
+  {
+    Serial.println("Failed to read user config.");
+    // Put in a placeholder that keeps the thing turned off.
+    LEDEvent *event = new LEDEvent(0, 0, LEDEvent::LED_STATE_OFF);
+    ll.add(event);
+  }
+  else
+  {
+    for (JsonObject item : doc["events"].as<JsonArray>())
+    {
+      int hour = item["hour"];
+      int minute = item["minute"];
+      int state = item["state"];
+      LEDEvent *event = new LEDEvent(hour, minute, state);
+      ll.add(event);
+    }
+  }
   findCurrent(ll);
   targetLedStatus = current->data->state;
 }

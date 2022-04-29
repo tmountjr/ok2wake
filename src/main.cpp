@@ -32,6 +32,8 @@ void setup()
   setUpLed();
 
   Serial.print("\nStarting wifi");
+  WiFi.hostname("ok2wake");
+  // WiFi.config(WIFI_STATIC_IP, WIFI_GATEWAY, WIFI_SUBNET);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED)
   {
@@ -42,12 +44,6 @@ void setup()
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
   Serial.println("");
-
-  if (!MDNS.begin("ok2wake")) {
-    Serial.println("mDNS setup unsuccessful.");
-  } else {
-    Serial.println("mDNS started; now available at ok2wake.local");
-  }
 
   // Set up filesystem.
   LittleFS.begin();

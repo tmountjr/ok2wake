@@ -139,9 +139,10 @@ void getStatusResponse()
     corsResponse();
   else if (method == HTTP_GET)
   {
-    DynamicJsonDocument jsonObject(1024);
+    DynamicJsonDocument jsonObject(JSON_OBJECT_SIZE(3));
     jsonObject["t"] = timeClient.getEpochTime();
     jsonObject["s"] = targetLedStatus;
+    jsonObject["o"] = tz_offset;
     String jsonObjectString;
     serializeJson(jsonObject, jsonObjectString);
     server.sendHeader("Access-Control-Allow-Origin", "*");

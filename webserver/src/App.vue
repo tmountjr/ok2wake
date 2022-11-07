@@ -169,6 +169,7 @@ export default {
       const status = await resp.json();
       this.status.t = status.t;
       this.status.s = status.s;
+      this.status.o = status.o;
       await this.currentEvent();
     },
     async wake() {
@@ -219,12 +220,12 @@ export default {
   },
   computed: {
     deviceTime() {
-      if ('t' in this.status) {
-        // The time is offset by four hours in the c++ code to allow for the use
-        // of local times for events. Unfortunately when it reports the epoch time
-        // it also adds in that offset. So here we have to remove the offset first,
-        // then turn into milliseconds.
-        const nonOffsetTime = (this.status.t + (4 * 60 * 60)) * 1000;
+      if ('t' in this.status && 'o' in this.status) {
+        // The time is offset in the c++ code to allow for the use of local times
+        // for events. Unfortunately when it reports the epoch time it also adds
+        // in that offset. So here we have to remove the offset first, then turn
+        // into milliseconds.
+        const nonOffsetTime = (this.status.t - parseInt(this.status.o)) * 1000;
         return new Date(nonOffsetTime).toLocaleString();
       }
       return 'N/A';

@@ -22,9 +22,6 @@
 #define WIFI_SSID "Please define WIFI_SSID in src/secrets.h"
 #endif
 
-// EDT offset from GMT in seconds
-#define EDT_OFFSET -14400L
-
 void setup()
 {
   Serial.begin(115200);
@@ -63,7 +60,32 @@ void setup()
     current_time = timeClient.getEpochTime();
     delay(500);
   }
-  timeClient.setTimeOffset(EDT_OFFSET);
+
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    if (http.begin(client, "http://worldtimeapi.org/api/timezone/America/New_York"))
+    {
+      int httpCode = http.GET();
+      if (httpCode == 200)
+      {
+        DynamicJsonDocument apiResp(2048);
+        String resp = http.getString();
+        DeserializationError e = deserializeJson(apiResp, resp);
+        if (e)
+        {
+          Serial.println("Failed to read timezone information");
+          Serial.println(e.c_str());
+        }
+        else
+        {
+          tz_offset = apiResp["raw_offset"].as<signed long>();
+        }
+      }
+      http.end();
+    }
+  }
+
+  timeClient.setTimeOffset(tz_offset);
   Serial.println(" Done!");
   Serial.printf("Started running at %s\n\n", timeClient.getFormattedTime());
 

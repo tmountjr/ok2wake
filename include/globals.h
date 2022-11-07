@@ -5,6 +5,8 @@
 #include <WiFiUdp.h>
 #include <NTPClient.h>
 #include <ESP8266WebServer.h>
+#include <ESP8266HTTPClient.h>
+#include <WiFiClient.h>
 #include <ESP8266mDNS.h>
 #include <LinkedList.h>
 #include <string>
@@ -15,6 +17,10 @@ NTPClient timeClient(ntpUDP);
 
 // Web server setup
 ESP8266WebServer server(8080);
+HTTPClient http;
+WiFiClient client;
+
+signed long tz_offset = 0L;
 
 // Target LED status (allows for overrides)
 byte targetLedStatus;

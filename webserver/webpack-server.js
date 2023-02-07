@@ -34,6 +34,7 @@ const preAm = new LEDEvent(6, 0, LEDEvent.LED_STATE_SLEEP);
 const am = new LEDEvent(7, 0, LEDEvent.LED_STATE_WAKE);
 const midday = new LEDEvent(8, 0, LEDEvent.LED_STATE_OFF);
 let defaultEvents = [preAm, am, midday];
+let timezoneName = 'America/New_York'
 
 function findCurrent() {
   if (defaultEvents[defaultEvents.length - 1].isPast() || defaultEvents[0].isFuture()) return defaultEvents[defaultEvents.length - 1];
@@ -62,11 +63,26 @@ app.post('/status/set', (req, res) => {
   res.status(200).send();
 });
 
+app.post('/tz/set', (req, res) => {
+  timezoneName = req.body.tz_name;
+  const current = findCurrent();
+  const now = new Date()
+  res.json({
+    t: Math.floor(now.valueOf() / 1000),
+    s: current.state,
+    o: now.getTimezoneOffset() * 60,
+    tz: timezoneName,
+  });
+});
+
 app.get('/status', (req, res) => {
   const current = findCurrent();
+  const now = new Date()
   res.json({
-    t: Math.floor((new Date()).valueOf() / 1000),
+    t: Math.floor(now.valueOf() / 1000),
     s: current.state,
+    o: now.getTimezoneOffset() * 60,
+    tz: timezoneName,
   });
 });
 

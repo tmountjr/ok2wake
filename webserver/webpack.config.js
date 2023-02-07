@@ -63,9 +63,16 @@ module.exports = {
           }
         },
         {
+          module: 'pure-forms',
+          entry: {
+            path: 'https://unpkg.com/browse/purecss@2.1.0/build/forms-min.css',
+            type: 'css'
+          }
+        },
+        {
           module: 'fontawesome',
           entry: {
-            path: 'https://use.fontawesome.com/c652f8dc00.js',
+            path: 'https://kit.fontawesome.com/5805201f22.js',
             type: 'js'
           }
         },

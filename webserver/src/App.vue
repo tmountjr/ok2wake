@@ -15,8 +15,24 @@
       <div class="pure-g">
         <div class="pure-u-1">
           <h1>Current Status</h1>
-          <p>Current device time: {{ deviceTime }} </p>
+          <p>Current device time: {{ deviceTime }}</p>
           <p>Current status: {{ deviceStatus }}</p>
+          <p>Current timezone: {{ status.tz }}</p>
+        </div>
+        <div class="pure-u-1">
+          <form class="pure-form">
+            <fieldset class="inline">
+              <select name="tz" id="tz" class="pure-input-1" v-model="currentTimezone">
+                <option
+                  v-for="tz in timezones"
+                  :key="tz"
+                  :value="tz"
+                  :selected="tz == status.tz"
+                >{{ tz }}</option>
+              </select>
+              <button class="pure-button" @click="updateTz"><i class="fa-solid fa-save"></i></button>
+            </fieldset>
+          </form>
         </div>
         <div class="pure-u-1">
           <h1>Update Status</h1>
@@ -38,13 +54,16 @@
             <Events v-if="events.length > 0" :events="events" />
 
             <div class="pure-u-1">
-              <h2 class="condensed">Edit Schedule</h2>
+              <h2 class="condensed">
+                Edit Schedule
+                <p class="subtitle">All times are relative to whatever the local timezone is set to.</p>
+              </h2>
               <form class="pure-form">
                 <fieldset class="inline" v-for="(event,i) in events" :key="`event-edit-${i}`">
                   <legend>
                     Event {{ i }} 
                     <button class="pure-button button-error button-small" @click="removeEvent($event, i)">
-                      <i class="fa fa-trash"></i>
+                      <i class="fa-solid fa-trash"></i>
                     </button>
                   </legend>
                   <input class="pure-input-1-4" type="number" name="hour" :id="`event-edit-${i}-hour`" v-model.number="event.hour" />
@@ -59,8 +78,8 @@
                 </fieldset>
 
                 <div class="pure-button-group" role="group">
-                  <button class="pure-button" @click="addEvent"><i class="fa fa-plus"></i></button>
-                  <button class="pure-button" @click="saveEvents"><i class="fa fa-save"></i></button>
+                  <button class="pure-button" @click="addEvent"><i class="fa-solid fa-plus"></i></button>
+                  <button class="pure-button" @click="saveEvents"><i class="fa-solid fa-save"></i></button>
                 </div>
 
               </form>
@@ -125,17 +144,26 @@ button.pure-button {
     background: rgb(202, 60, 60);
   }
 }
+
+h2.condensed p.subtitle {
+  margin-top: 0;
+  font-size: 60%;
+  font-weight: initial;
+  font-style: italic;
+}
 </style>
 
 <script>
-import * as axios from 'axios';
 import Events from './Events.vue';
 import { LEDEvent } from './LEDEvent.model';
 
 const host = "";
 
 const changeState = async (newState) => {
-  await axios.post(`${host}/status/set`, `state=${newState}`);
+  await fetch(`${host}/status/set`, {
+    method: 'POST',
+    body: `state=${newState}`
+  });
 };
 
 const translatedStatus = (status) => {
@@ -161,7 +189,15 @@ export default {
       status: {},
       events: [],
       current: {},
+      timezones: [],
+      currentTimezone: ''
     };
+  },
+  async mounted() {
+    const resp = await fetch('http://worldtimeapi.org/api/timezone');
+    const zones = await resp.json();
+    this.timezones = zones;
+    await this.update();
   },
   methods: {
     async update() {
@@ -170,7 +206,21 @@ export default {
       this.status.t = status.t;
       this.status.s = status.s;
       this.status.o = status.o;
+      this.status.tz = status.tz;
+      this.currentTimezone = status.tz;
       await this.currentEvent();
+    },
+    async updateTz(e) {
+      e.preventDefault();
+      const resp = await fetch(`${host}/tz/set`, {
+        method: 'POST',
+        body: JSON.stringify({ tz_name: this.currentTimezone }),
+      });
+      const data = await resp.json();
+      this.status.t = data.t;
+      this.status.s = data.s;
+      this.status.o = data.o;
+      this.status.tz = data.tz;
     },
     async wake() {
       await changeState(1);
@@ -185,12 +235,13 @@ export default {
       await this.update();
     },
     async reset() {
-      await axios.post(`${host}/reset`);
+      await fetch(`${host}/reset`, { method: 'POST' });
       await this.update();
     },
     async currentEvent() {
-      const resp = await axios.get(`${host}/events`);
-      let { events } = resp.data;
+      const resp = await fetch(`${host}/events`);
+      const data = await resp.json();
+      let { events } = data;
       events = events.map(e => new LEDEvent(e.hour, e.minute, e.state));
       this.events = events;
     },
@@ -214,19 +265,26 @@ export default {
       e.preventDefault();
       // sort the events list
       this.events.sort((a, b) => a.secondsSinceMidnight() - b.secondsSinceMidnight());
-      await axios.post(`${host}/events/set`, this.events);
+      await fetch(`${host}/events/set`, {
+        method: 'POST',
+        body: JSON.stringify(this.events)
+      });
       await this.update();
     }
   },
   computed: {
     deviceTime() {
-      if ('t' in this.status && 'o' in this.status) {
-        // The time is offset in the c++ code to allow for the use of local times
-        // for events. Unfortunately when it reports the epoch time it also adds
-        // in that offset. So here we have to remove the offset first, then turn
-        // into milliseconds.
-        const nonOffsetTime = (this.status.t - parseInt(this.status.o)) * 1000;
-        return new Date(nonOffsetTime).toLocaleString();
+      const { t = null, o = null, tz = null } = this.status;
+      if (t && o && tz) {
+        /** Correct GMT time */
+        const nonOffsetTime = (t - parseInt(o)) * 1000;
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          dateStyle: 'short',
+          timeStyle: 'medium',
+          hour12: false,
+          timeZone: tz,
+        });
+        return formatter.format(nonOffsetTime);
       }
       return 'N/A';
     },

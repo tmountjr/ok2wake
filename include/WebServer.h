@@ -44,6 +44,35 @@ void getHomeResponse()
   }
 }
 
+void setTimeZoneResponse()
+{
+  HTTPMethod method = server.method();
+  if (!(method == HTTP_POST || method == HTTP_OPTIONS))
+    invalidRequestResponse(405, "Method Not Allowed");
+
+  if (method == HTTP_OPTIONS)
+    corsResponse();
+  else
+  {
+    StaticJsonDocument<512> inputDoc;
+    deserializeJson(inputDoc, server.arg("plain"));
+    tz_name = inputDoc["tz_name"].as<String>();
+    updateTimeClient();
+    StaticJsonDocument<96> jsonObject;
+    jsonObject["t"] = timeClient.getEpochTime();
+    jsonObject["s"] = targetLedStatus;
+    jsonObject["o"] = tz_offset;
+    jsonObject["tz"] = tz_name;
+    String jsonObjectString;
+    serializeJson(jsonObject, jsonObjectString);
+    server.sendHeader("Access-Control-Allow-Origin", "*");
+    server.send(200, "application/json", jsonObjectString);
+
+    // Write the new value back to flash memory.
+    writeSettings();
+  }
+}
+
 void setEventsResponse()
 {
   HTTPMethod method = server.method();
@@ -139,10 +168,11 @@ void getStatusResponse()
     corsResponse();
   else if (method == HTTP_GET)
   {
-    DynamicJsonDocument jsonObject(JSON_OBJECT_SIZE(3));
+    StaticJsonDocument<96> jsonObject;
     jsonObject["t"] = timeClient.getEpochTime();
     jsonObject["s"] = targetLedStatus;
     jsonObject["o"] = tz_offset;
+    jsonObject["tz"] = tz_name;
     String jsonObjectString;
     serializeJson(jsonObject, jsonObjectString);
     server.sendHeader("Access-Control-Allow-Origin", "*");
@@ -194,6 +224,7 @@ void resetResponse()
 
 void wifiServerSetup()
 {
+  server.on("/tz/set", setTimeZoneResponse);
   server.on("/events/set", setEventsResponse);
   server.on("/events", getEventsResponse);
   server.on("/status/set", setLedStatusResponse);

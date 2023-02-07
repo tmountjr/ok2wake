@@ -45,49 +45,38 @@ void setup()
   // Set up filesystem.
   LittleFS.begin();
 
+  // Read settings.
+  readSettings();
+
   // Set up WiFi server
   wifiServerSetup();
 
   ArduinoOTA.begin();
 
   timeClient.begin();
-  unsigned long current_time = 0;
-  Serial.print("Getting time");
-  while (current_time < 1000)
-  {
-    Serial.print(".");
-    timeClient.update();
-    current_time = timeClient.getEpochTime();
-    delay(500);
-  }
 
-  if (WiFi.status() == WL_CONNECTED)
+  // Retrieve the settings from flash and use the timezone name that was last saved.
+  // Default to "America/New_York" (set above) if there's a problem.
+  File settingsFile = LittleFS.open("settings.json", "r");
+  if (!settingsFile)
   {
-    if (http.begin(client, "http://worldtimeapi.org/api/timezone/America/New_York"))
+    Serial.println("Unable to open 'settings.json' from flash. Using defaults.");
+  }
+  else
+  {
+    StaticJsonDocument<512> settingsDoc;
+    DeserializationError e = deserializeJson(settingsDoc, settingsFile);
+    if (e)
     {
-      int httpCode = http.GET();
-      if (httpCode == 200)
-      {
-        DynamicJsonDocument apiResp(2048);
-        String resp = http.getString();
-        DeserializationError e = deserializeJson(apiResp, resp);
-        if (e)
-        {
-          Serial.println("Failed to read timezone information");
-          Serial.println(e.c_str());
-        }
-        else
-        {
-          tz_offset = apiResp["raw_offset"].as<signed long>();
-        }
-      }
-      http.end();
+      Serial.println("Unable to deserialize 'settings.json' from flash. Using defaults.");
+      Serial.println(e.c_str());
+    }
+    else
+    {
+      tz_name = settingsDoc["tz_name"].as<String>();
     }
   }
-
-  timeClient.setTimeOffset(tz_offset);
-  Serial.println(" Done!");
-  Serial.printf("Started running at %s\n\n", timeClient.getFormattedTime());
+  updateTimeClient();
 
   // A sane set of defaults has been provided as part of the firmware in events.json.
   File defaultEventList = LittleFS.open(eventsPath, "r");

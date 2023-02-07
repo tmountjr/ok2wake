@@ -88,7 +88,9 @@ module.exports = {
   ],
   output: {
     path: flashDir,
-    clean: true,
+    clean: {
+      keep: /\.json$/
+    },
     publicPath: '/',
   }
 }

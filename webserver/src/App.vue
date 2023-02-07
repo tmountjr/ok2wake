@@ -160,9 +160,8 @@ import { LEDEvent } from './LEDEvent.model';
 const host = "";
 
 const changeState = async (newState) => {
-  await fetch(`${host}/status/set`, {
+  await fetch(`${host}/status/set?state=${newState}`, {
     method: 'POST',
-    body: `state=${newState}`
   });
 };
 

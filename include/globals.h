@@ -57,6 +57,12 @@ void updateTimeClient()
         else
         {
           tz_offset = apiResp["raw_offset"].as<signed long>();
+          bool is_dst = apiResp["dst"].as<bool>();
+          if (is_dst)
+          {
+            signed int dst_offset = apiResp["dst_offset"].as<signed int>();
+            tz_offset = tz_offset + dst_offset;
+          }
         }
       }
       http.end();

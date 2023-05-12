@@ -33,6 +33,10 @@ export default {
           return 'Sleep state';
         case 3:
           return 'Off';
+        case 4:
+          return 'Night Light';
+        case 5:
+          return 'Custom'
         default:
           return 'N/A';
       }

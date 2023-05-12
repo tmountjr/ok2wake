@@ -1,1 +1,8 @@
-{"events":[{"hour":7,"minute":30,"state":3},{"hour":18,"minute":30,"state":4},{"hour":6,"minute":45,"state":2},{"hour":7,"minute":15,"state":1}]}
+{
+  "events": [
+    { "hour": 6, "minute": 45, "state": 2 },
+    { "hour": 7, "minute": 15, "state": 1 },
+    { "hour": 7, "minute": 30, "state": 3 },
+    { "hour": 18, "minute": 30, "state": 4 }
+  ]
+}

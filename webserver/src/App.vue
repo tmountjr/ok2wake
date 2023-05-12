@@ -40,6 +40,8 @@
             <button class="pure-button" @click="wake">Set to "Wake" mode</button>
             <button class="pure-button" @click="sleep">Set to "Sleep" mode</button>
             <button class="pure-button" @click="off">Set to "Off" mode</button>
+            <button class="pure-button" @click="nightLight">Set to "Night Light" mode</button>
+            <button class="pure-button" @click="custom">Set to "Custom" mode</button>
             <button class="pure-button" @click="reset">Reset to default</button>
           </div>
         </div>
@@ -74,6 +76,8 @@
                     <option value="1">Wake</option>
                     <option value="2">Sleep</option>
                     <option value="3">Off</option>
+                    <option value="4">Night Light</option>
+                    <option value="5">Custom</option>
                   </select>
                 </fieldset>
 
@@ -168,11 +172,15 @@ const changeState = async (newState) => {
 const translatedStatus = (status) => {
   switch (status) {
     case 1:
-      return 'Wake mode';
+      return 'Wake state';
     case 2:
-      return 'Sleep mode';
+      return 'Sleep state';
     case 3:
       return 'Off';
+    case 4:
+      return 'Night Light';
+    case 5:
+      return 'Custom'
     default:
       return 'N/A';
   }
@@ -231,6 +239,14 @@ export default {
     },
     async off() {
       await changeState(3);
+      await this.update();
+    },
+    async nightLight() {
+      await changeState(4);
+      await this.update();
+    },
+    async custom() {
+      await changeState(5);
       await this.update();
     },
     async reset() {

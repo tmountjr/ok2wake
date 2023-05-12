@@ -2,6 +2,8 @@ class LEDEvent {
   static LED_STATE_WAKE = 1;
   static LED_STATE_SLEEP = 2;
   static LED_STATE_OFF = 3;
+  static LED_STATE_NIGHT_LIGHT = 4;
+  static LED_STATE_CUSTOM = 5;
 
   constructor(hour, minute, state) {
     this.hour = hour;

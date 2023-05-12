@@ -16,6 +16,8 @@ DimmableRGBLED *RGB_B = new DimmableRGBLED(RGB_B_R, RGB_B_G, RGB_B_B);
 RGBValues wake_rgb(0, 255, 0);
 RGBValues sleep_rgb(210, 0, 255);
 RGBValues off_rgb(0, 0, 0);
+RGBValues night_light_rgb(51, 153, 255);
+RGBValues custom_rgb(255, 255, 255);
 
 // Define RGB LED behavior on wake.
 void wake()
@@ -36,6 +38,18 @@ void off()
 {
   RGB_A->immediate(off_rgb);
   RGB_B->immediate(off_rgb);
+}
+
+void night_light()
+{
+  RGB_A->immediate(night_light_rgb);
+  RGB_B->immediate(night_light_rgb);
+}
+
+void custom()
+{
+  RGB_A->immediate(custom_rgb);
+  RGB_B->immediate(custom_rgb);
 }
 
 // To run in setup() - set the pin modes and turn off.

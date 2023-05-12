@@ -8,11 +8,11 @@
 // Set up global variables.
 #include "globals.h"
 
-// Include web server functionality.
-#include "WebServer.h"
-
 // Include LED information
 #include "led.h"
+
+// Include web server functionality.
+#include "WebServer.h"
 
 #ifndef WIFI_PASSWORD
 #define WIFI_PASSWORD "Please define WIFI_PASSWORD in src/secrets.h"
@@ -124,6 +124,12 @@ void loop()
     break;
   case LEDEvent::LED_STATE_SLEEP:
     sleep();
+    break;
+  case LEDEvent::LED_STATE_NIGHT_LIGHT:
+    night_light();
+    break;
+  case LEDEvent::LED_STATE_CUSTOM:
+    custom();
     break;
   case LEDEvent::LED_STATE_OFF:
   default:

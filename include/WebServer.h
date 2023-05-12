@@ -197,7 +197,13 @@ void setLedStatusResponse()
       if (server.argName(i) == "state")
       {
         int newState = server.arg(i).toInt();
-        if (newState == LEDEvent::LED_STATE_OFF || newState == LEDEvent::LED_STATE_SLEEP || newState == LEDEvent::LED_STATE_WAKE)
+        if (
+          newState == LEDEvent::LED_STATE_OFF ||
+          newState == LEDEvent::LED_STATE_SLEEP ||
+          newState == LEDEvent::LED_STATE_WAKE ||
+          newState == LEDEvent::LED_STATE_NIGHT_LIGHT ||
+          newState == LEDEvent::LED_STATE_CUSTOM
+        )
         {
           targetLedStatus = newState;
           server.send(200, "text/plain", "OK");
@@ -222,6 +228,43 @@ void resetResponse()
   }
 }
 
+void setColorResponse()
+{
+  HTTPMethod method = server.method();
+  if (!(method == HTTP_POST || method == HTTP_OPTIONS))
+    invalidRequestResponse(405, "Method Not Allowed");
+
+  if (method == HTTP_OPTIONS)
+    corsResponse();
+  else
+  {
+    StaticJsonDocument<512> inputDoc;
+    deserializeJson(inputDoc, server.arg("plain"));
+    int event_id = inputDoc["event_id"].as<int>();
+    int red_channel = inputDoc["r"].as<int>();
+    int green_channel = inputDoc["g"].as<int>();
+    int blue_channel = inputDoc["b"].as<int>();
+    // Only support custom for now, until we know it's working
+    if (event_id == LEDEvent::LED_STATE_CUSTOM)
+    {
+      custom_rgb = RGBValues(red_channel, green_channel, blue_channel);
+      
+      StaticJsonDocument<96> jsonResponseObject;
+      jsonResponseObject["t"] = timeClient.getEpochTime();
+      jsonResponseObject["s"] = targetLedStatus;
+      jsonResponseObject["o"] = tz_offset;
+      jsonResponseObject["tz"] = tz_name;
+      String jsonObjectString;
+      serializeJson(jsonResponseObject, jsonObjectString);
+      server.sendHeader("Access-Control-Allow-Origin", "*");
+      server.send(200, "application/json", jsonObjectString);
+    }
+    else {
+      invalidRequestResponse();
+    }
+  }
+}
+
 void wifiServerSetup()
 {
   server.on("/tz/set", setTimeZoneResponse);
@@ -230,6 +273,7 @@ void wifiServerSetup()
   server.on("/status/set", setLedStatusResponse);
   server.on("/status", getStatusResponse);
   server.on("/reset", resetResponse);
+  server.on("/color/set", setColorResponse);
   server.on("/", getHomeResponse);
   server.serveStatic("/main.js", LittleFS, "main.js");
 

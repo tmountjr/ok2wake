@@ -33,6 +33,8 @@ public:
   static const int LED_STATE_WAKE = 1;
   static const int LED_STATE_SLEEP = 2;
   static const int LED_STATE_OFF = 3;
+  static const int LED_STATE_NIGHT_LIGHT = 4;
+  static const int LED_STATE_CUSTOM = 5;
 };
 
 LEDEvent::LEDEvent() {

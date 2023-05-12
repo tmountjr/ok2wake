@@ -265,6 +265,42 @@ void setColorResponse()
   }
 }
 
+void getConfigResponse()
+{
+  HTTPMethod method = server.method();
+  if (!(method == HTTP_GET || method == HTTP_HEAD || method == HTTP_OPTIONS))
+    invalidRequestResponse(405, "Method Not Allowed");
+
+  if (method == HTTP_HEAD)
+    server.send(200, "application/json", "");
+  else if (method == HTTP_OPTIONS)
+    corsResponse();
+  else
+  {
+    StaticJsonDocument<512> doc;
+    JsonArray events = doc.createNestedArray("events");
+
+    bool seenCurrent = false;
+    Node<LEDEvent> *c = current;
+    while (!seenCurrent)
+    {
+      JsonObject o = events.createNestedObject();
+      o["hour"] = c->data->hour;
+      o["minute"] = c->data->minute;
+      o["state"] = c->data->state;
+      c = c->next;
+      if (c == current)
+        seenCurrent = true;
+    }
+    doc["tz_name"] = tz_name;
+
+    String jsonObjectString;
+    serializeJson(doc, jsonObjectString);
+    server.sendHeader("Access-Control-Allow-Origin", "*");
+    server.send(200, "application/json", jsonObjectString);
+  }
+}
+
 void wifiServerSetup()
 {
   server.on("/tz/set", setTimeZoneResponse);
@@ -274,6 +310,7 @@ void wifiServerSetup()
   server.on("/status", getStatusResponse);
   server.on("/reset", resetResponse);
   server.on("/color/set", setColorResponse);
+  server.on("/config", getConfigResponse);
   server.on("/", getHomeResponse);
   server.serveStatic("/main.js", LittleFS, "main.js");
 

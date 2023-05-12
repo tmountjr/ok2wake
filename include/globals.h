@@ -12,7 +12,7 @@
 #include <string>
 #include <ArduinoJson.h>
 #include <LittleFS.h>
-#include <WiFiServerSecureBearSSL.h>
+// #include <WiFiServerSecureBearSSL.h>
 
 // NTP setup
 WiFiUDP ntpUDP;
@@ -22,22 +22,22 @@ NTPClient timeClient(ntpUDP);
 ESP8266WebServer server(8080);
 HTTPClient http;
 WiFiClient client;
-std::unique_ptr<BearSSL::WiFiClientSecure> secure_client(new BearSSL::WiFiClientSecure);
-String firebase_url = strcat(strcat(FIREBASE_DATABASE_URL, "/ok2wake.json?auth="), FIREBASE_DATABASE_SECRET);
+// std::unique_ptr<BearSSL::WiFiClientSecure> secure_client(new BearSSL::WiFiClientSecure);
+// String firebase_url = strcat(strcat(FIREBASE_DATABASE_URL, "/ok2wake.json?auth="), FIREBASE_DATABASE_SECRET);
 
 signed long tz_offset = 0L;
 String tz_name = "America/New_York";
 
-void updateFirebaseLog(String payload)
-{
-  if (WiFi.status() == WL_CONNECTED) {
-    secure_client->setInsecure();
-    if (http.begin(*secure_client, firebase_url)) {
-      http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-      http.POST(payload);
-    }
-  }
-}
+// void updateFirebaseLog(String payload)
+// {
+//   if (WiFi.status() == WL_CONNECTED) {
+//     secure_client->setInsecure();
+//     if (http.begin(*secure_client, firebase_url)) {
+//       http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+//       http.POST(payload);
+//     }
+//   }
+// }
 
 void updateTimeClient()
 {

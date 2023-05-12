@@ -41,11 +41,6 @@ void setup()
   Serial.println(WiFi.localIP());
   Serial.println("");
 
-  #if defined FIREBASE_DATABASE_URL && defined FIREBASE_DATABASE_SECRET
-  String payload =  "{\"event\":\"power_on\",\"ip\":\"" + WiFi.localIP().toString() + "\"}";
-  updateFirebaseLog(payload);
-  #endif
-
   // Set up filesystem.
   LittleFS.begin();
 
@@ -81,6 +76,11 @@ void setup()
     }
   }
   updateTimeClient();
+
+#if defined FIREBASE_DATABASE_URL && defined FIREBASE_DATABASE_SECRET
+  // String payload = "{\"event\":\"power_on\",\"ip\":\"" + WiFi.localIP().toString() + "\"}";
+  // updateFirebaseLog(payload);
+#endif
 
   // A sane set of defaults has been provided as part of the firmware in events.json.
   File defaultEventList = LittleFS.open(eventsPath, "r");

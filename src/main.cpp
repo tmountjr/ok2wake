@@ -30,7 +30,6 @@ void setup()
 
   Serial.print("\nStarting wifi");
   WiFi.hostname("ok2wake");
-  // WiFi.config(WIFI_STATIC_IP, WIFI_GATEWAY, WIFI_SUBNET);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED)
   {
@@ -41,6 +40,11 @@ void setup()
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
   Serial.println("");
+
+  #if defined FIREBASE_DATABASE_URL && defined FIREBASE_DATABASE_SECRET
+  String payload =  "{\"event\":\"power_on\",\"ip\":\"" + WiFi.localIP().toString() + "\"}";
+  updateFirebaseLog(payload);
+  #endif
 
   // Set up filesystem.
   LittleFS.begin();

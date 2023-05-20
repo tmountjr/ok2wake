@@ -77,11 +77,6 @@ void setup()
   }
   updateTimeClient();
 
-#if defined FIREBASE_DATABASE_URL && defined FIREBASE_DATABASE_SECRET
-  // String payload = "{\"event\":\"power_on\",\"ip\":\"" + WiFi.localIP().toString() + "\"}";
-  // updateFirebaseLog(payload);
-#endif
-
   // A sane set of defaults has been provided as part of the firmware in events.json.
   File defaultEventList = LittleFS.open(eventsPath, "r");
   StaticJsonDocument<512> doc;
@@ -106,6 +101,19 @@ void setup()
   }
   findCurrent(ll);
   targetLedStatus = current->data->state;
+
+  #ifdef IP_TRACKER
+  char url[128];
+  strcpy(url, IP_TRACKER);
+  strcat(url, WiFi.localIP().toString().c_str());
+  Serial.printf("\n Pinging url %s...\n", url);
+  HTTPClient httpTracker;
+  if (httpTracker.begin(client, url))
+  {
+    int httpCode = httpTracker.GET();
+    Serial.printf("Pinged IP tracker. Status Code = %i\n", httpCode);
+  }
+  #endif
 }
 
 void loop()
